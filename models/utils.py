@@ -7,21 +7,35 @@ from torchvision.models.resnet import resnet50
 import gdown
 from torch import nn
 
+# https://drive.google.com/file/d/16ZKRuyqZv_Nh97UAfh51JIxtPfsrQy9i/view?usp=sharing
+# https://drive.google.com/file/d/1nDvOTHe--VhkmCUM6d8VHb75j0h5_0cR/view?usp=sharing
+bcc_urls_dict = {
+    "biased_mnist_color": "https://drive.google.com/uc?id=1ZjMO_KsnJZW6y_vn9iWo9F_VgONspr1x",
+    "fb_biased_mnist_bgcolor": "https://drive.google.com/uc?id=1nDvOTHe--VhkmCUM6d8VHb75j0h5_0cR",
+    "fb_biased_mnist_fgcolor": "https://drive.google.com/uc?id=16ZKRuyqZv_Nh97UAfh51JIxtPfsrQy9i",
+    "celeba_gender": "https://drive.google.com/uc?id=1owTN1ouOoZM2Sj507QoSH3VM2wdIItzw",
+    "celeba_lipstick": "https://drive.google.com/uc?id=176zg_VYxhJt5TsSjlb87dZcTf9PXfJli",
+    "celeba_makeup": "https://drive.google.com/uc?id=1w1h3bKvNV2sCpKyB2wz_aL7i_noqQLX8",
+    "utkface_race": "https://drive.google.com/uc?id=1u7KTRXT3uYetIUiCuFgmC-Ifrzw2dpFA",
+    "utkface_age": "https://drive.google.com/uc?id=1gnnVKJPY8I0br9MzQCfY1B44VU5bdffn",
+    "waterbirds_background": "TODO",
+}
 
-def load_celeba_flac_model(device):
-    model_dir = "./pretrained/flac"
-    model_file = "celeba_blonde.pth"
+
+def get_model_dict(dataset_name, bias_name):
+    model_dir = "./pretrained"
+    model_file = f"{dataset_name}_{bias_name}.pth"
     model_path = os.path.join(model_dir, model_file)
-
-    # URL to download the model file if it's missing
-    model_url = "https://drive.google.com/uc?id=1lIBjjUtZxl3cwa4YuNsrVpp4WqP3jsb5"
 
     # Ensure the directory exists
     os.makedirs(model_dir, exist_ok=True)
 
     # Check if the model file exists
     if not os.path.exists(model_path):
-        print(f"Model file not found at {model_path}. Downloading...")
+        print(f"Bias-capturing classifier not found at {model_path}. Downloading...")
+        # URL to download the model file if it's missing
+        model_url = bcc_urls_dict[f"{dataset_name}_{bias_name}"]
+
         try:
             # Download the model file from Google Drive
             gdown.download(model_url, model_path, quiet=False)
@@ -30,215 +44,5 @@ def load_celeba_flac_model(device):
             print(f"Error downloading the model: {e}")
             raise
 
-    # Load the model
-    model = ResNet18()
-    model.load_state_dict(
-        torch.load(model_path, map_location=torch.device(device))["model"]
-    )
-    model = model.to(device)
-    return model
-
-
-def load_celeba_badd_model(device):
-    raise NotImplementedError("The BAdd model for CelebA is not implemented yet.")
-
-
-def load_celeba_mavias_model(device):
-    model_dir = "./pretrained/mavias"
-    model_file = "celeba_blonde.pth"
-    model_path = os.path.join(model_dir, model_file)
-
-    # URL to download the model file if it's missing
-    model_url = "https://drive.google.com/uc?id=1QBkL8MD9sn8JdkG2ckemUWLWPjR2m-WK"
-
-    # Ensure the directory exists
-    os.makedirs(model_dir, exist_ok=True)
-
-    # Check if the model file exists
-    if not os.path.exists(model_path):
-        print(f"Model file not found at {model_path}. Downloading...")
-        try:
-            # Download the model file from Google Drive
-            gdown.download(model_url, model_path, quiet=False)
-            print(f"Downloaded model to {model_path}.")
-        except Exception as e:
-            print(f"Error downloading the model: {e}")
-            raise
-
-    # Load the model
-    model = ResNet18()
-    model.load_state_dict(
-        torch.load(model_path, map_location=torch.device(device))["model"]
-    )
-    model = model.to(device)
-    return model
-
-
-def load_utkface_flac_model(device):
-    model_dir = "./pretrained/flac"
-    model_file = "utkface_race.pth"
-    model_path = os.path.join(model_dir, model_file)
-
-    # URL to download the model file if it's missing
-    model_url = "https://drive.google.com/uc?id=1MToyLcW89IU2G_p7UDYfRZihlllVL4ts"
-
-    # Ensure the directory exists
-    os.makedirs(model_dir, exist_ok=True)
-
-    # Check if the model file exists
-    if not os.path.exists(model_path):
-        print(f"Model file not found at {model_path}. Downloading...")
-        try:
-            # Download the model file from Google Drive
-            gdown.download(model_url, model_path, quiet=False)
-            print(f"Downloaded model to {model_path}.")
-        except Exception as e:
-            print(f"Error downloading the model: {e}")
-            raise
-
-    # Load the model
-    model = ResNet18()
-    model.load_state_dict(
-        torch.load(model_path, map_location=torch.device(device))["model"]
-    )
-    model = model.to(device)
-    return model
-
-
-def load_utkface_mavias_model(device):
-    raise NotImplementedError("The MAVias model for UTKFace is not implemented yet.")
-
-
-def load_utkface_badd_model(device):
-    model_dir = "./pretrained/badd"
-    model_file = "utkface_race.pth"
-    model_path = os.path.join(model_dir, model_file)
-
-    # URL to download the model file if it's missing
-    model_url = "https://drive.google.com/uc?id=1SL_AGaUaxI_NziWFjsRjBY56ROAsa8qN"
-    # Ensure the directory exists
-    os.makedirs(model_dir, exist_ok=True)
-
-    # Check if the model file exists
-    if not os.path.exists(model_path):
-        print(f"Model file not found at {model_path}. Downloading...")
-        try:
-            # Download the model file from Google Drive
-            gdown.download(model_url, model_path, quiet=False)
-            print(f"Downloaded model to {model_path}.")
-        except Exception as e:
-            print(f"Error downloading the model: {e}")
-            raise
-
-    # Load the model
-    model = ResNet18()
-    model.load_state_dict(
-        torch.load(model_path, map_location=torch.device(device))["model"]
-    )
-    model = model.to(device)
-    return model
-
-
-def load_waterbirds_mavias_model(device):
-    model_dir = "./pretrained/mavias"
-    model_file = "waterbirds.pt"
-    model_path = os.path.join(model_dir, model_file)
-
-    # URL to download the model file if it's missing
-    model_url = "https://drive.google.com/uc?id=1N5bz67XwkjdC1nliA6onGDt-mSNepNeP"
-
-    # Ensure the directory exists
-    os.makedirs(model_dir, exist_ok=True)
-
-    # Check if the model file exists
-    if not os.path.exists(model_path):
-        print(f"Model file not found at {model_path}. Downloading...")
-        try:
-            # Download the model file from Google Drive
-            gdown.download(model_url, model_path, quiet=False)
-            print(f"Downloaded model to {model_path}.")
-        except Exception as e:
-            print(f"Error downloading the model: {e}")
-            raise
-
-    # Load the model
-    model = resnet50()
-    model.fc = nn.Linear(2048, 2)
-    model.load_state_dict(
-        torch.load(model_path, map_location=torch.device(device))["model"]
-    )
-    model = model.to(device)
-    return model
-
-
-def load_waterbirds_flac_model(device):
-    raise NotImplementedError("The FLAC model for Waterbirds is not implemented yet.")
-
-
-def load_waterbirds_badd_model(device):
-    model_dir = "./pretrained/badd"
-    model_file = "waterbirds.pth"
-    model_path = os.path.join(model_dir, model_file)
-
-    # URL to download the model file if it's missing
-    model_url = "https://drive.google.com/uc?id=1BMAis2LSuiQQK7OUn0T4lqKAMuHkfWm1"
-    # Ensure the directory exists
-    os.makedirs(model_dir, exist_ok=True)
-
-    # Check if the model file exists
-    if not os.path.exists(model_path):
-        print(f"Model file not found at {model_path}. Downloading...")
-        try:
-            # Download the model file from Google Drive
-            gdown.download(model_url, model_path, quiet=False)
-            print(f"Downloaded model to {model_path}.")
-        except Exception as e:
-            print(f"Error downloading the model: {e}")
-            raise
-
-    # Load the model
-    model = BAddResNet50()
-    model.fc = nn.Linear(2048, 2)
-    model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
-
-    model = model.to(device)
-    return model
-
-
-def load_imagenet9_mavias_model(device):
-    model_dir = "./pretrained/mavias"
-    model_file = "imagenet9.pt"
-    model_path = os.path.join(model_dir, model_file)
-
-    # URL to download the model file if it's missing
-    model_url = "https://drive.google.com/uc?id=1X6rFM5___K3wpQx35e7Q4mZLzpatR9wH"
-    # Ensure the directory exists
-    os.makedirs(model_dir, exist_ok=True)
-
-    # Check if the model file exists
-    if not os.path.exists(model_path):
-        print(f"Model file not found at {model_path}. Downloading...")
-        try:
-            # Download the model file from Google Drive
-            gdown.download(model_url, model_path, quiet=False)
-            print(f"Downloaded model to {model_path}.")
-        except Exception as e:
-            print(f"Error downloading the model: {e}")
-            raise
-
-    # Load the model
-    model = resnet50()
-    model.fc = nn.Linear(2048, 9)
-    model.load_state_dict(
-        torch.load(model_path, map_location=torch.device(device))["model"]
-    )
-    model = model.to(device)
-    return model
-
-
-def load_imagenet9_flac_model(device):
-    raise NotImplementedError("The FLAC model for ImageNet9 is not implemented.")
-
-
-def load_imagenet9_badd_model(device):
-    raise NotImplementedError("The BAdd model for ImageNet9 is not implemented.")
+    model_dict = torch.load(model_path)
+    return model_dict

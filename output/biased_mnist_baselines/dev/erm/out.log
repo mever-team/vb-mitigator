@@ -198,3 +198,575 @@ val_loss: 6.02
 test_accuracy: 0.10
 test_loss: 6.03
 -------------------------
+2024-12-05 15:09:50,898 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-05 15:12:34,889 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-05 15:14:34,421 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-05 15:17:10,224 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-05 15:19:17,107 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-05 15:20:36,285 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-05 15:35:59,233 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-05 15:37:19,261 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-05 15:38:07,956 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-06 12:03:24,343 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  BIASES:
+  - color
+  - blonde
+  - makeup
+  - race
+  - age
+  - background
+  - bgcolor
+  - fg_color
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  FLAC:
+    LOSS:
+      ALPHA: 1.0
+      DELTA: 0.5
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+2024-12-06 12:08:33,286 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 1
+    ROOT: ./data/biased_mnist
+  BIASES:
+  - color
+  - blonde
+  - makeup
+  - race
+  - age
+  - background
+  - bgcolor
+  - fg_color
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: false
+  WANDB: false
+MITIGATOR:
+  FLAC:
+    LOSS:
+      ALPHA: 1.0
+      DELTA: 0.5
+  MAVIAS:
+    ENCODER: clip
+    LLM: llama
+    LOSS:
+      ALPHA: 1.0
+      LAMBDA: 1.0
+    TAGGING_MODEL: ram
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 64
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+-------------------------
+epoch: 0
+lr: 0.001000
+train_cls_loss: 0.12
+val_accuracy: 0.10
+val_loss: 6.40
+test_accuracy: 0.10
+test_loss: 6.34
+-------------------------
+-------------------------
+epoch: 1
+lr: 0.001000
+train_cls_loss: 0.08
+val_accuracy: 0.10
+val_loss: 5.54
+test_accuracy: 0.10
+test_loss: 5.50
+-------------------------

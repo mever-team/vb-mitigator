@@ -1,0 +1,23 @@
+EXPERIMENT:
+  NAME: "mavias"
+  TAG: "dev"
+  PROJECT: "fb_biased_mnist_baselines"
+DATASET:
+  TYPE: "fb_biased_mnist"
+MITIGATOR:
+  TYPE: "mavias"
+  MAVIAS:
+    LOSS:
+      ALPHA: 0.05
+      LAMBDA: 0.8
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 70
+  LR: 0.001
+  TYPE: "Adam"
+  SCHEDULER:
+    LR_DECAY_STAGES: [60]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "simple_conv"
+METRIC: "acc"

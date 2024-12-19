@@ -5,5 +5,5 @@ def acc(data_dict):
     predictions = data_dict["predictions"]
     targets = data_dict["targets"]
 
-    accuracy = (predictions == targets).mean()
+    accuracy = (predictions == targets).mean() * 100
     return {"accuracy": accuracy}

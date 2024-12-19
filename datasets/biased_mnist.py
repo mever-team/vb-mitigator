@@ -317,6 +317,7 @@ def get_color_mnist(
     load_bias_feature=False,
     given_y=True,
     train_corr=None,
+    transform=None,
 ):
     # logging.info(
     #     f"get_color_mnist - split: {split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}"
@@ -326,40 +327,42 @@ def get_color_mnist(
         f"get_color_mnist - split: {split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}",
         "INFO",
     )
-
-    normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-    if aug:
-        if data_label_correlation == 0.999:
-            prob = 0.1
+    if transform is None:
+        normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        if aug:
+            if data_label_correlation == 0.999:
+                prob = 0.1
+            else:
+                prob = 0.5
+            train_transform = transforms.Compose(
+                [
+                    transforms.RandomApply(
+                        [
+                            transforms.RandomResizedCrop(28, scale=(0.75, 1)),
+                        ],
+                        p=prob,
+                    ),
+                    transforms.RandomApply(
+                        [
+                            transforms.RandomRotation(20),
+                        ],
+                        p=prob,
+                    ),
+                    transforms.RandomApply(
+                        [
+                            transforms.RandomAffine(20),
+                        ],
+                        p=prob,
+                    ),
+                    # transforms.GaussianBlur(3),
+                    transforms.ToTensor(),
+                    normalize,
+                ]
+            )
         else:
-            prob = 0.5
-        train_transform = transforms.Compose(
-            [
-                transforms.RandomApply(
-                    [
-                        transforms.RandomResizedCrop(28, scale=(0.75, 1)),
-                    ],
-                    p=prob,
-                ),
-                transforms.RandomApply(
-                    [
-                        transforms.RandomRotation(20),
-                    ],
-                    p=prob,
-                ),
-                transforms.RandomApply(
-                    [
-                        transforms.RandomAffine(20),
-                    ],
-                    p=prob,
-                ),
-                # transforms.GaussianBlur(3),
-                transforms.ToTensor(),
-                normalize,
-            ]
-        )
+            train_transform = transforms.Compose([transforms.ToTensor(), normalize])
     else:
-        train_transform = transforms.Compose([transforms.ToTensor(), normalize])
+        train_transform = transform
     if two_crop:
         train_transform = TwoCropTransform(train_transform)
 

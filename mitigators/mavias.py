@@ -1,659 +1,386 @@
 """
-Copyright (c) Meta Platforms, Inc. and affiliates.
-All rights reserved.
-This source code is licensed under the license found in the
-LICENSE file in the root directory of this source tree.
+Module for MAVIASTrainer class and related functions.
 """
 
-# --------------------------------------------------------
-# implementation from LfF:
-# https://github.com/alinlab/LfF
-# --------------------------------------------------------
+import os
+import json
+import re
+import ast
 
-import csv
-import torch
-import torch.nn as nn
-
-
-from utils import IdxDataset, EMAGPU as EMA
+import ollama
 from tqdm import tqdm
-from .base_trainer import BaseTrainer
-import torchvision.models as models
-from torchvision.models.resnet import ResNet, Bottleneck, BasicBlock
+import pandas as pd
+import torch
 import torch.nn.functional as F
-from torch.utils.data.sampler import WeightedRandomSampler
-from .losses import SupConLoss
-from dataset.urbancars import UrbanCars
-from dataset.urbancars_clip import UrbanCarsClip
-from model.classifiers import (
-    get_classifier,
-    get_transforms,
-)
-from utils import (
-    set_seed,
-    MultiDimAverageMeter,
-)
-from PIL import Image
 from transformers import CLIPTokenizer, CLIPModel, CLIPTextModel
-from model.mixup_cutmix_transforms import RandomMixup, RandomCutmix
-from torch.utils.data.dataloader import default_collate
-import torchvision.transforms as transforms
+from ram.models import ram_plus
+
+from models.builder import get_model
+from models.simple_mlp import SimpleMLP
+from .base_trainer import BaseTrainer
+from tools.utils import load_ollama_docker
 
 
-class SimpleMLP(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(SimpleMLP, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)  # Dense layer
-        self.relu = nn.ReLU()  # Activation function
-        self.fc2 = nn.Linear(hidden_size, output_size)  # Output layer
-        self.dropout = nn.Dropout(p=0.0)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.dropout(x)
-        # print("you are here")
-        # x = self.relu(x)
-        # x = self.fc2(x)
-        return x
-
-
-# def precompute_text_embeddings(device, tags_voc, tokenizer, model):
-#     precomputed_embeddings = []
-#     with torch.no_grad():
-#         for idx in range(len(tags_voc)):
-#             # print(comma_separated_tags)
-#             text_inputs = tokenizer(
-#             [tags_voc[idx]],
-#             padding="max_length",
-#             return_tensors="pt",
-#             ).to(device)
-#             b_feats = model.get_text_features(**text_inputs)
-#             for prompt, emb in zip([tags_voc[idx]], b_feats):
-#                 precomputed_embeddings.append(emb.detach().cpu())
-#     return torch.stack(precomputed_embeddings)
-def precompute_text_embeddings(trainloader, device, tags_voc, tokenizer, model):
-    precomputed_embeddings = {}
-    with torch.no_grad():
-        for batch_idx, (_, _, bias, _) in enumerate(tqdm(trainloader)):
-
-            bias = bias.to(device)
-            # print(bias)
-            # Find the indices of non-zero elements (tag presence)
-            sample_indices, tag_indices = torch.nonzero(bias, as_tuple=True)
-
-            # Map the non-zero indices to tag names
-            tags_for_samples = [tags_voc[idx] for idx in tag_indices]
-
-            # Group tags by sample
-            samples_tags = {i.item(): [] for i in torch.unique(sample_indices)}
-            for sample, tag in zip(sample_indices, tags_for_samples):
-                samples_tags[sample.item()].append(tag)
-                # Ensure every sample index has an entry in the dictionary
-            for i in range(bias.shape[0]):
-                if i not in samples_tags:
-                    samples_tags[i] = []
-            # print(samples_tags)
-            comma_separated_tags = [
-                "a photo with " + ", ".join(samples_tags[i])
-                for i in range(bias.shape[0])
-            ]
-            # print(comma_separated_tags)
-            text_inputs = tokenizer(
-                comma_separated_tags,
-                padding="max_length",
-                return_tensors="pt",
-            ).to(device)
-            b_feats = model.get_text_features(**text_inputs)
-            for prompt, emb in zip(comma_separated_tags, b_feats):
-                precomputed_embeddings[prompt] = emb.detach().cpu()
-    return precomputed_embeddings
-
-
-class BAddResNet(models.ResNet):
-    def __init__(self):
-        super(BAddResNet, self).__init__(Bottleneck, [3, 4, 6, 3])
-        # super(BAddResNet, self).__init__(BasicBlock, [2,2,2,2])
-
-    def concat_forward(self, x, f, m):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)
-        # x = F.normalize(x, dim=1)
-        # f = F.normalize(f, dim=1)
-
-        # feats = x + m*f
-        # x = self.fc(feats)
-
-        x = self.fc(x)
-        fx = self.fc(f)
-        out = x + fx
-        return out, [x, fx]
-
-    def concat_forward2(self, x, f, f2):
-        # print(x.shape)
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)
-        # norm_x = torch.norm(x, dim=1)
-        # norm_f = torch.norm(f, dim=1)
-        # print("Norm of x:", norm_x)
-        # print("Norm of f:", norm_f)
-
-        # x = F.normalize(x, dim=1)
-        # f = F.normalize(f, dim=1)
-        # f2 = F.normalize(f2, dim=1)
-        feats = x + f + f2  # * 100
-        x = self.fc(feats)
-
-        return x, feats
-
-    def _forward_impl(self, x):
-        # See note [TorchScript super()]
-        # print(x.type())
-        # print(self.conv1.weight.type())
-        x = self.conv1(x)
-
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)
-        # x = F.normalize(x, dim=1)
-        x = self.fc(x)
-
-        return x
-
-
-class BAddResNet18(models.ResNet):
-    def __init__(self):
-        super(BAddResNet18, self).__init__(Bottleneck, [3, 4, 6, 3])
-
-    def get_features(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)
-        return x
-
-
-class MAViasTrainer(BaseTrainer):
-
-    def _setup_dataset(self):
-        args = self.args
-
-        train_transform = self._get_train_transform()
-        test_transform = get_transforms(args.arch, is_training=False)
-
-        train_set = UrbanCarsClip(
-            transform=train_transform,
-        )
-        self.train_set = train_set
-        val_set = UrbanCars(
-            "data",
-            "val",
-            transform=test_transform,
-        )
-        test_set = UrbanCars(
-            "data",
-            "test",
-            transform=test_transform,
-        )
-        # self.obj_name_list = train_set.obj_name_list
-        self.num_class = 2
-
-        train_set = self._modify_train_set(train_set)
-        train_loader = self._get_train_loader(train_set)
-        val_loader = torch.utils.data.DataLoader(
-            val_set,
-            batch_size=args.batch_size,
-            num_workers=args.num_workers,
-            pin_memory=args.pin_memory,
-            persistent_workers=args.num_workers > 0,
-        )
-        test_loader = torch.utils.data.DataLoader(
-            test_set,
-            batch_size=args.batch_size,
-            num_workers=args.num_workers,
-            pin_memory=args.pin_memory,
-            persistent_workers=args.num_workers > 0,
-        )
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.test_loader = test_loader
-        self.tags_voc = train_set.tags_utility.unique_tags
-
-    def _setup_optimizers(self):
-        super(MAViasTrainer, self)._setup_optimizers()
-        parameters_projection = self.proj_net.parameters()
-        self.optimizer_projection = torch.optim.SGD(
-            parameters_projection, lr=0.001, momentum=0.9, weight_decay=5e-4
-        )
+class MAVIASTrainer(BaseTrainer):
 
     def _setup_models(self):
-        super(MAViasTrainer, self)._setup_models()
-        self.classifier2 = BAddResNet()
-        self.classifier2.fc = nn.Linear(self.classifier.fc.in_features, 2)
-        self.classifier2.load_state_dict(self.classifier.state_dict())
-        self.classifier = self.classifier2
-        self.classifier = self.classifier.to(self.device)
-        self.proj_net = SimpleMLP(
-            768, self.classifier.fc.in_features, self.classifier.fc.in_features
+        self.model = get_model(
+            self.cfg.MODEL.TYPE,
+            self.num_class,
         )
-        self.proj_net = self.proj_net.to(self.device)
-        # for p in self.classifier.parameters():
-        #     p.requires_grad = False
+        self.model.to(self.device)
 
-        # for p in self.classifier.fc.parameters():
-        #     p.requires_grad = True
-        # for p in self.classifier.layer4.parameters():
-        #     p.requires_grad = True
+        self.proj_net = SimpleMLP(
+            self.cfg.MITIGATOR.MAVIAS.ENCODER.SIZE, self.model.fc.in_features
+        )
+        self.proj_net.to(self.device)
 
-        # proj_net.train()
-
-        models = [
+        clip_models = [
             "openai/clip-vit-base-patch16",
             "openai/clip-vit-base-patch32",
             "openai/clip-vit-large-patch14",
         ]
 
-        model_id = models[2]
+        clip_model_id = clip_models[2]
 
-        self.tokenizer = CLIPTokenizer.from_pretrained(model_id)
-        self.text_encoder = CLIPTextModel.from_pretrained(model_id).to(self.device)
-        self.clip_model = CLIPModel.from_pretrained(model_id).to(self.device)
-        self.precomputed_embeddings = precompute_text_embeddings(
-            trainloader=self.train_loader,
-            device=self.device,
-            tags_voc=self.tags_voc,
-            tokenizer=self.tokenizer,
-            model=self.clip_model,
-        )
-        # self.precomputed_embeddings = precompute_text_embeddings( device=self.device, tags_voc=self.tags_voc, tokenizer=self.tokenizer, model=self.clip_model)
-        # self.precomputed_embeddings = self.precomputed_embeddings.to(self.device)
+        self.tokenizer = CLIPTokenizer.from_pretrained(clip_model_id)
+        self.text_encoder = CLIPTextModel.from_pretrained(clip_model_id)
+        self.text_encoder.to(self.device)
+        self.clip_model = CLIPModel.from_pretrained(clip_model_id).to(self.device)
 
-    def _setup_criterion(self):
-        self.criterion = nn.CrossEntropyLoss()
+    def _setup_optimizer(self):
+        super(MAVIASTrainer, self)._setup_optimizer()
+        parameters_projection = self.proj_net.parameters()
 
-    def _setup_method_name_and_default_name(self):
-        args = self.args
-        args.method = "clip"
-        default_name = f"{args.method}_es_{args.early_stop_metric}_{args.dataset}"
-        self.default_name = default_name
-
-        # CSV file name
-        self.csv_file = "training_data.csv"
-
-        # Write header to CSV
-        with open(self.csv_file, mode="w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(
-                [
-                    "epoch",
-                    "subgroup",
-                    "main_logits",
-                    "main_acc",
-                    "clip_logits",
-                    "clip_acc",
-                    "combined_logits",
-                    "combined_acc",
-                ]
+        if self.cfg.MITIGATOR.MAVIAS.PROJNET.OPTIM.TYPE == "SGD":
+            self.optimizer_projection = torch.optim.SGD(
+                parameters_projection,
+                lr=self.cfg.MITIGATOR.MAVIAS.PROJNET.OPTIM.LR,
+                momentum=self.cfg.MITIGATOR.MAVIAS.PROJNET.OPTIM.MOMENTUM,
+                weight_decay=self.cfg.MITIGATOR.MAVIAS.PROJNET.OPTIM.WEIGHT_DECAY,
             )
-
-    def train(self):
-        args = self.args
-        self.classifier.train()
-        train_proj_net = self.cur_epoch < 600
-        if train_proj_net:
-            self.proj_net.train()
+        elif self.cfg.MITIGATOR.MAVIAS.PROJNET.OPTIM.TYPE == "Adam":
+            self.optimizer_projection = torch.optim.Adam(
+                parameters_projection,
+                lr=self.cfg.MITIGATOR.MAVIAS.PROJNET.OPTIM.LR,
+                weight_decay=self.cfg.MITIGATOR.MAVIAS.PROJNET.OPTIM.WEIGHT_DECAY,
+            )
         else:
-            self.proj_net.eval()
-
-        total_ce_loss = 0
-        total_norm_loss = 0
-
-        total_norm_main = 0
-        total_norm_clip = 0
-
-        # total_main_logits = {'000':[0,0], '001':[0,0], '010':[0,0], '011':[0,0], '100':[0,0], '101':[0,0], '110':[0,0], '111':[0,0]}
-        # total_clip_logits = {'000':[0,0], '001':[0,0], '010':[0,0], '011':[0,0], '100':[0,0], '101':[0,0], '110':[0,0], '111':[0,0]}
-        # total_combined_logits = {'000':[0,0], '001':[0,0], '010':[0,0], '011':[0,0], '100':[0,0], '101':[0,0], '110':[0,0], '111':[0,0]}
-
-        # total_main_correct = {'000':0, '001':0, '010':0, '011':0, '100':0, '101':0, '110':0, '111':0}
-        # total_clip_correct = {'000':0, '001':0, '010':0, '011':0, '100':0, '101':0, '110':0, '111':0}
-        # total_combined_correct = {'000':0, '001':0, '010':0, '011':0, '100':0, '101':0, '110':0, '111':0}
-        # total_samples = {'000':0, '001':0, '010':0, '011':0, '100':0, '101':0, '110':0, '111':0}
-
-        pbar = tqdm(self.train_loader, dynamic_ncols=True)
-        for idx, (images, targets, bias, bg_cooc) in enumerate(pbar):
-            images, targets, bias = (
-                images.to(self.device, non_blocking=True),
-                targets.to(self.device, non_blocking=True),
-                bias.to(self.device, non_blocking=True),
-            )
-            bg_labels = bg_cooc[0].to(self.device, non_blocking=True)
-            cooc_labels = bg_cooc[1].to(self.device, non_blocking=True)
-
-            # weighted_sum = torch.mm(bias, self.precomputed_embeddings)  # Shape: (batch_size, num_features)
-            # # Calculate the number of tags present in each sample
-            # num_present_tags = torch.sum(bias, dim=1, keepdim=True)  # Shape: (batch_size, 1)
-            # # Avoid division by zero by replacing 0 with 1 in num_present_tags
-            # num_present_tags = torch.where(num_present_tags == 0, torch.tensor(1.0, device=self.device), num_present_tags)
-            # # Calculate the average features
-            # b_feats = weighted_sum / num_present_tags  # Shape: (batch_size, num_features)
-
-            # Find the indices of non-zero elements (tag presence)
-            sample_indices, tag_indices = torch.nonzero(bias, as_tuple=True)
-
-            # Map the non-zero indices to tag names
-            tags_for_samples = [self.tags_voc[idx] for idx in tag_indices]
-
-            # Group tags by sample
-            samples_tags = {i.item(): [] for i in torch.unique(sample_indices)}
-            for sample, tag in zip(sample_indices, tags_for_samples):
-                samples_tags[sample.item()].append(tag)
-                # Ensure every sample index has an entry in the dictionary
-            for i in range(bias.shape[0]):
-                if i not in samples_tags:
-                    samples_tags[i] = []
-
-            b_feats = torch.stack(
-                [
-                    self.precomputed_embeddings[
-                        "a photo with " + ", ".join(samples_tags[i])
-                    ]
-                    for i in range(bias.shape[0])
-                ]
+            raise ValueError(
+                f"Unsupported optimizer type: {self.cfg.MITIGATOR.MAVIAS.PROJNET.OPTIM.TYPE}"
             )
 
-            b_feats = b_feats.to(self.device)
-            if train_proj_net:
-                b_feats = self.proj_net(b_feats)
-            else:
-                with torch.no_grad():
-                    b_feats = self.proj_net(b_feats)
+    def _train_iter(self, batch):
+        inputs = batch["inputs"].to(self.device)
+        targets = batch["targets"].to(self.device)
+        indices = batch["index"]
 
-            # logits, features = self.classifier(images)
-            # if self.cur_epoch<=8:
-            #     m =10
-            # else:
-            #     m=0
-            # m = 100/self.cur_epoch
-            logits, feats = self.classifier.concat_forward(images, b_feats, 1)
-            tmp = feats[1].detach().cpu().clone()
-            norm_main = torch.norm(feats[0])
-            norm_clip = torch.norm(tmp).to(self.device)
-            norm_loss = F.mse_loss(norm_main, norm_clip * 0.4)
-            # print(torch.norm(feats[0]), torch.norm(tmp))
-            ce_loss = self.criterion(logits, targets)
+        self.optimizer.zero_grad(set_to_none=True)
+        self.optimizer_projection.zero_grad(set_to_none=True)
 
-            # mask = ((targets == 0) &  (bg_labels == 1) & (cooc_labels == 1)) | ((targets == 1) &  (bg_labels == 0) & (cooc_labels == 0))
-            # m_logits = main_logits[range(logits.shape[0]), targets]
-            # m_logits = main_logits[mask]
+        tags = [self.index_to_tags[index.item()] for index in indices]
+        tag_emb = torch.stack([self.precomputed_embeddings[tag] for tag in tags]).to(
+            self.device
+        )
 
-            # norm_loss = (m_logits ** 2).mean()
+        b_feats = self.proj_net(tag_emb)
 
-            loss = ce_loss + 0.01 * norm_loss
+        logits, logits2 = self.model.mavias_forward(inputs, b_feats)
+        tmp = logits2.detach().cpu().clone()
+        norm_main = torch.norm(logits)
+        norm_clip = torch.norm(tmp).to(self.device)
+        norm_loss = F.mse_loss(
+            norm_main, norm_clip * self.cfg.MITIGATOR.MAVIAS.LOSS.LAMBDA
+        )
+        ce_loss = self.criterion(logits + logits2, targets)
 
-            self.optimizer.zero_grad(set_to_none=True)
-            if train_proj_net:
-                self.optimizer_projection.zero_grad(set_to_none=True)
-            self._loss_backward(loss)
-            self._optimizer_step(self.optimizer)
-            if train_proj_net:
-                self._optimizer_step(self.optimizer_projection)
+        loss = ce_loss + self.cfg.MITIGATOR.MAVIAS.LOSS.ALPHA * norm_loss
 
-            self._scaler_update()
+        self._loss_backward(loss)
+        self._optimizer_step()
 
-            total_ce_loss += ce_loss.item()
-            total_norm_loss += norm_loss.item()
-            total_norm_clip += norm_clip.item()
-            total_norm_main += norm_main.item()
-            avg_ce_loss = total_ce_loss / (idx + 1)
-            avg_norm_loss = total_norm_loss / (idx + 1)
-            avg_norm_clip = total_norm_clip / (idx + 1)
-            avg_norm_main = total_norm_main / (idx + 1)
+        return {"train_cls_loss": ce_loss, "train_norm_loss": norm_loss}
 
-            # for key in total_main_logits.keys():
-            #     key_target = int(key[0])
-            #     key_bg = int(key[1])
-            #     key_cooc = int(key[2])
-            #     # print(targets.shape, bg_labels.shape, cooc_labels.shape)
-            #     if targets.shape != bg_labels.shape or targets.shape != cooc_labels.shape:
+    def _optimizer_step(self):
+        self.optimizer.step()
+        self.optimizer_projection.step()
 
-            #         raise ValueError("The shapes of targets, bg_labels, and cooc_labels must match")
+    def _set_train(self):
+        self.proj_net.train()
+        return super()._set_train()
 
-            #     mask_target = targets == key_target
-            #     mask_bg = bg_labels == key_bg
-            #     mask_cooc = cooc_labels == key_cooc
-            #     mask = mask_target & mask_bg & mask_cooc
+    def _set_eval(self):
+        self.proj_net.eval()
+        return super()._set_eval()
 
-            #     main_logits = feats[0]
-            #     clip_logits = feats[1]
-
-            #     main_logits = main_logits[mask]
-            #     clip_logits = clip_logits[mask]
-            #     combined_logits = logits[mask]
-            #     targets_m = targets[mask]
-
-            #     total_main_logits[key][0] += torch.sum(main_logits,dim=0)[0].detach().cpu().item()
-            #     total_main_logits[key][1] += torch.sum(main_logits,dim=0)[1].detach().cpu().item()
-
-            #     total_clip_logits[key][0] += torch.sum(clip_logits,dim=0)[0].detach().cpu().item()
-            #     total_clip_logits[key][1] += torch.sum(clip_logits,dim=0)[1].detach().cpu().item()
-
-            #     total_combined_logits[key][0] += torch.sum(combined_logits,dim=0)[0].detach().cpu().item()
-            #     total_combined_logits[key][1] += torch.sum(combined_logits,dim=0)[1].detach().cpu().item()
-
-            #     pred_main = main_logits.argmax(dim=1)
-            #     pred_clip = clip_logits.argmax(dim=1)
-            #     pred_combined = combined_logits.argmax(dim=1)
-
-            #     correct_main = torch.sum(pred_main == targets_m)
-            #     correct_clip = torch.sum(pred_clip == targets_m)
-            #     correct_combined = torch.sum(pred_combined == targets_m)
-
-            #     total_main_correct[key] += correct_main
-            #     total_clip_correct[key]  += correct_clip
-            #     total_combined_correct[key]  += correct_combined
-            #     total_samples[key]  += targets_m.shape[0]
-
-            pbar.set_description(
-                "[{}/{}] ce: {:.3f}, norm: {:.3f}, main_norm: {:.3f}, clip_norm: {:.3f}".format(
-                    self.cur_epoch,
-                    args.epoch,
-                    avg_ce_loss,
-                    avg_norm_loss,
-                    avg_norm_main,
-                    avg_norm_clip,
-                )
+    def _method_specific_setups(self):
+        self.get_ram_tags()
+        self.get_relevant_tags()
+        self.get_irrelevant_tags()
+        # print(self.tags_df)
+        self.index_to_tags = {
+            row["index"]: (
+                row["irrelevant_tags"].replace(" | ", ", ")
+                if isinstance(row["irrelevant_tags"], str)
+                else " "
             )
-
-        # for key in total_main_logits.keys():
-        #     main_logits = [x / total_samples[key] for x in total_main_logits[key]]
-        #     clip_logits = [x / total_samples[key] for x in total_clip_logits[key]]
-        #     combined_logits = [x / total_samples[key] for x in total_combined_logits[key]]
-        #     main_acc = total_main_correct[key] / total_samples[key]
-        #     clip_acc = total_clip_correct[key] / total_samples[key]
-        #     combined_acc = total_combined_correct[key] / total_samples[key]
-
-        #     # Append data to CSV
-        #     with open(self.csv_file, mode='a', newline='') as file:
-        #         writer = csv.writer(file)
-        #         writer.writerow([self.cur_epoch, key, main_logits, main_acc.detach().cpu().item(), clip_logits, clip_acc.detach().cpu().item(), combined_logits, combined_acc.detach().cpu().item()])
-
-        #     print(f"subgroup: {key}, #samples: {total_samples[key]}")
-        #     print(f"[{key}, main] logits: {[x / total_samples[key] for x in total_main_logits[key]]}, acc: {total_main_correct[key]/total_samples[key]}")
-        #     print(f"[{key}, clip] logits: {[x / total_samples[key] for x in total_clip_logits[key]]}, acc: {total_clip_correct[key]/total_samples[key]}")
-        #     print(f"[{key}, combined] logits: {[x / total_samples[key] for x in total_combined_logits[key]]}, acc: {total_combined_correct[key]/total_samples[key]}")
-        log_dict = {
-            "ce_loss": total_ce_loss / len(self.train_loader),
-            "norm_loss": total_norm_loss / len(self.train_loader),
+            for _, row in self.tags_df.iterrows()
         }
-        self.log_to_wandb(log_dict)
+        self.precomputed_embeddings = self.precompute_text_embeddings()
 
-    def _state_dict_for_save(self):
-        state_dict = super(MAViasTrainer, self)._state_dict_for_save()
-        return state_dict
+    def get_irrelevant_tags(self):
+        # check if self.tags_df["irrelevant_tags"] exists
+        if "irrelevant_tags" in self.tags_df.columns:
+            return
+        else:
 
-    def _load_state_dict(self, state_dict):
-        super(MAViasTrainer, self)._load_state_dict(state_dict)
+            def calc_irrelevant_tags(row):
+                tags = str(row["tags"]) if isinstance(row["tags"], str) else ""
+                all_tags = set(tag.strip() for tag in tags.split(" | "))
+                relevant = set(self.relevant_tags.get(row["target"], []))
+                return " | ".join(all_tags - relevant)
 
-    @torch.no_grad()
-    def _eval_split(self, loader, split):
-        args = self.args
-
-        meter = MultiDimAverageMeter((self.num_class, self.num_class, self.num_class))
-        total_correct = []
-        total_bg_correct = []
-        total_co_occur_obj_correct = []
-        total_shortcut_conflict_mask = []
-
-        self.classifier.eval()
-        pbar = tqdm(loader, dynamic_ncols=True)
-        for data_dict in pbar:
-            image, target = data_dict["image"], data_dict["label"]
-            image = image.to(self.device, non_blocking=True)
-            target = target.to(self.device, non_blocking=True)
-
-            # compute output
-            with torch.cuda.amp.autocast(enabled=args.amp):
-                output = self.classifier(image)
-
-            pred = output.argmax(dim=1)
-
-            obj_label = target[:, 0]
-            bg_label = target[:, 1]
-            co_occur_obj_label = target[:, 2]
-
-            shortcut_conflict_mask = bg_label != co_occur_obj_label
-            total_shortcut_conflict_mask.append(shortcut_conflict_mask.cpu())
-
-            correct = pred == obj_label
-            meter.add(correct.cpu(), target.cpu())
-            total_correct.append(correct.cpu())
-
-            bg_correct = pred == bg_label
-            total_bg_correct.append(bg_correct.cpu())
-
-            co_occur_obj_correct = pred == co_occur_obj_label
-            total_co_occur_obj_correct.append(co_occur_obj_correct.cpu())
-
-        num_correct = meter.cum.reshape(*meter.dims)
-        cnt = meter.cnt.reshape(*meter.dims)
-        multi_dim_color_acc = num_correct / cnt
-        log_dict = {}
-        absent_present_str_list = ["absent", "present"]
-        absent_present_bg_ratio_list = [1 - args.bg_ratio, args.bg_ratio]
-        absent_present_co_occur_obj_ratio_list = [
-            1 - args.co_occur_obj_ratio,
-            args.co_occur_obj_ratio,
-        ]
-
-        weighted_group_acc = 0
-        for bg_shortcut in range(len(absent_present_str_list)):
-            for second_shortcut in range(len(absent_present_str_list)):
-                first_shortcut_mask = (meter.eye_tsr == bg_shortcut).unsqueeze(2)
-                co_occur_obj_shortcut_mask = (
-                    meter.eye_tsr == second_shortcut
-                ).unsqueeze(1)
-                mask = first_shortcut_mask * co_occur_obj_shortcut_mask
-                acc = multi_dim_color_acc[mask].mean().item()
-                bg_shortcut_str = absent_present_str_list[bg_shortcut]
-                co_occur_obj_shortcut_str = absent_present_str_list[second_shortcut]
-                log_dict[
-                    f"{split}_bg_{bg_shortcut_str}"
-                    f"_co_occur_obj_{co_occur_obj_shortcut_str}_acc"
-                ] = acc
-                cur_group_bg_ratio = absent_present_bg_ratio_list[bg_shortcut]
-                cur_group_co_occur_obj_ratio = absent_present_co_occur_obj_ratio_list[
-                    second_shortcut
-                ]
-                cur_group_ratio = cur_group_bg_ratio * cur_group_co_occur_obj_ratio
-                weighted_group_acc += acc * cur_group_ratio
-
-        bg_gap = (
-            log_dict[f"{split}_bg_absent_co_occur_obj_present_acc"] - weighted_group_acc
-        )
-        co_occur_obj_gap = (
-            log_dict[f"{split}_bg_present_co_occur_obj_absent_acc"] - weighted_group_acc
-        )
-        both_gap = (
-            log_dict[f"{split}_bg_absent_co_occur_obj_absent_acc"] - weighted_group_acc
-        )
-
-        log_dict.update(
-            {
-                f"{split}_id_acc": weighted_group_acc,
-                f"{split}_bg_gap": bg_gap,
-                f"{split}_co_occur_obj_gap": co_occur_obj_gap,
-                f"{split}_both_gap": both_gap,
-            }
-        )
-
-        total_bg_correct = torch.cat(total_bg_correct, dim=0)
-        total_co_occur_obj_correct = torch.cat(total_co_occur_obj_correct, dim=0)
-        total_correct = torch.cat(total_correct, dim=0)
-
-        (
-            bg_worst_group_acc,
-            co_occur_obj_worst_group_acc,
-            both_worst_group_acc,
-        ) = meter.get_worst_group_acc()
-
-        log_dict.update(
-            {
-                f"{split}_bg_worst_group_acc": bg_worst_group_acc,
-                f"{split}_co_occur_obj_worst_group_acc": co_occur_obj_worst_group_acc,
-                f"{split}_both_worst_group_acc": both_worst_group_acc,
-            }
-        )
-
-        if args.method == "erm":
-            # evaluate cue preference for ERM
-            obj_acc = total_correct.float().mean().item()
-            bg_acc = total_bg_correct.float().mean().item()
-            co_occur_obj_acc = total_co_occur_obj_correct.float().mean().item()
-
-            log_dict.update(
-                {
-                    f"{split}_cue_obj_acc": obj_acc,
-                    f"{split}_cue_bg_acc": bg_acc,
-                    f"{split}_cue_co_occur_obj_acc": co_occur_obj_acc,
-                }
+            self.tags_df["irrelevant_tags"] = self.tags_df.apply(
+                calc_irrelevant_tags, axis=1
+            )
+            # save to csv
+            self.tags_df.to_csv(
+                os.path.join(self.data_root, "train_tags.csv"), index=False
             )
 
-        self.log_to_wandb(log_dict)
+    def get_relevant_tags(self):
+        llm_name = self.cfg.MITIGATOR.MAVIAS.LLM.TYPE
+        batch_size = self.cfg.MITIGATOR.MAVIAS.LLM.BATCH_SIZE
 
-        return log_dict
+        # Initialize an empty list to store the tags
+        tags = []
+        # Open the CSV file and read the tags
+        unique_tags_df = pd.read_csv(
+            os.path.join(self.data_root, "unique_tags_per_class.csv")
+        )
+        unique_tags_df["tags"] = unique_tags_df["tags"].apply(ast.literal_eval)
+
+        self.relevant_tags = {}
+        flag = False
+        for target in unique_tags_df["class"]:
+            path_to_check = os.path.join(
+                self.data_root,
+                "relevant_tags",
+                f"{self.cfg.MITIGATOR.MAVIAS.LLM.TYPE}_bs{batch_size}_{target}_{self.target2name[target]}.csv",
+            )
+            # if path existis
+            if not os.path.exists(path_to_check):
+                flag = True
+                break
+            else:
+                print(f"Loading relevant tags from {path_to_check}")
+                self.relevant_tags[target] = pd.read_csv(path_to_check)["tags"].tolist()
+        if flag:
+            # Check if the ollama executable exists
+            load_ollama_docker(llm_name)
+
+            # Function to split list into batches of 100
+            def split_into_batches(lst, batch_size):
+                for i in range(0, len(lst), batch_size):
+                    yield lst[i : i + batch_size]
+
+            for target, tags in zip(unique_tags_df["class"], unique_tags_df["tags"]):
+                # print(f"tags: {tags[0]}")
+                # Initialize an empty list to collect relevant tags
+                relevant_tags = []
+                # Process tags in batches of 100
+
+                for batch in split_into_batches(tags, batch_size):
+                    # print(f"batch: {batch}")
+                    tag_list = ", ".join(
+                        batch
+                    )  # Join the batch into a comma-separated string
+                    # print(f"input tag list: {tag_list}")
+                    response = ollama.chat(
+                        model=llm_name,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": """
+                I will provide you with the name of a target class and a large list of tags. Your task is to evaluate the tags and identify only those directly related to the target class. A tag is considered relevant if it describes or is an essential part of the object associated with the class name. This includes tags that refer to:
+                physical components, defining features, inherent characteristics, and essential behaviors or functions of the object.
+                For example, if the target class is "bee," tags like "insect," "wing," and "buzz," are relevant because they describe core aspects of what a bee is or does.
+
+                Conversely, a tag is irrelevant if it refers to elements that are not an intrinsic part of the object. Irrelevant tags may include: 
+                background details, environmental context, colors (unless a defining characteristic), lighting, textures, other objects, or other non-essential contextual elements.
+                For example, in the case of the class "bee," tags like "sky," "flower," or "blue" would be irrelevant, as they describe the environment or background rather than the bee itself.
+
+                Please output only the relevant tags in JSON format only (i.e., {
+                relevant_tags: [
+                the list of tags
+                ] 
+                }).
+                                """,
+                            },
+                            {
+                                "role": "user",
+                                "content": f"""Target class: {self.target2name[target]}
+                Tags: {tag_list}
+                                """,
+                            },
+                        ],
+                    )
+
+                    # Output the result from the LLM for each batch
+                    # print(response["message"]["content"])
+                    output = response["message"]["content"]
+                    # Use regex to find all relevant tags
+                    # Match anything within braces `{}` and square brackets `[]` including strings
+                    # Use regex to find all relevant tags
+                    # Find all JSON objects in the text using regex
+                    json_objects = re.findall(r"{[^{}]*}", output)
+
+                    # Extracting relevant tags from each JSON object
+                    for json_obj in json_objects:
+                        try:
+                            # Load the JSON data
+                            data = json.loads(json_obj)
+
+                            # Append the relevant tags to the list
+                            relevant_tags.extend(data.get("relevant_tags", []))
+                        except json.JSONDecodeError as e:
+                            print(f"Error decoding JSON: {e}")
+
+                # Remove duplicates and sort the list if needed
+                relevant_tags = list(set(relevant_tags))
+                relevant_tags.sort()
+
+                # Output the relevant tags
+                print(f"class:{target}, relevant tags: {relevant_tags}")
+                # Create a DataFrame from the list of relevant tags
+                df = pd.DataFrame(relevant_tags, columns=["tags"])
+
+                # Save the DataFrame to a CSV file in the same directory
+                csv_file_path = os.path.join(
+                    self.data_root,
+                    "relevant_tags",
+                    f"{self.cfg.MITIGATOR.MAVIAS.LLM.TYPE}_bs{batch_size}_{target}_{self.target2name[target]}.csv",
+                )
+                os.makedirs(os.path.dirname(csv_file_path), exist_ok=True)
+
+                df.to_csv(csv_file_path, index=False)
+                self.relevant_tags[target] = relevant_tags
+
+    def get_ram_tags(self):
+
+        device = self.device
+        data_loader = self.dataloaders["tag_train"]
+        outdir = self.data_root
+        # Check if the file exists
+        if os.path.isfile(os.path.join(outdir, "train_tags.csv")):
+            print(f"Loading tags from {os.path.join(outdir, 'train_tags.csv')}")
+            # Load the tags from the CSV file
+            self.tags_df = pd.read_csv(os.path.join(outdir, "train_tags.csv"))
+        else:
+            print(
+                f"Extracting tags and saving to {os.path.join(outdir, 'train_tags.csv')}"
+            )
+            #######load model
+            model = ram_plus(
+                pretrained="https://huggingface.co/xinyu1205/recognize-anything-plus-model/resolve/main/ram_plus_swin_large_14m.pth",
+                image_size=self.cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE,
+                vit="swin_l",
+            )
+            model.eval()
+
+            model = model.to(device)
+
+            # Initialize a dictionary to store unique tags for each class
+            unique_tags_per_class = {}
+
+            # Loop through batches
+            for i, batch in enumerate(tqdm(data_loader)):
+                # Initialize an empty list to store tags
+                tag_list = []
+                index_list = []
+                target_list = []
+
+                images = batch["inputs"].to(self.device)
+                labels = batch["targets"]
+                indices = batch["index"]
+
+                with torch.no_grad():
+                    tags, _ = model.generate_tag(images)
+
+                # Iterate over tags and labels
+                for tag_uni, label in zip(tags, labels):
+                    label = label.item()  # Convert tensor to scalar
+                    if label not in unique_tags_per_class:
+                        unique_tags_per_class[label] = set()
+                    for tag in tag_uni.split(" | "):
+                        if tag != "":
+                            unique_tags_per_class[label].update([tag])
+                # Append tags to the tag_list
+                tag_list.extend(tags)
+                index_list.extend(indices.detach().cpu().numpy())
+                target_list.extend(labels.detach().cpu().numpy())
+                # Convert indices to numpy array and extend the list
+
+                # Write tags to file after every batch
+                tag_df = pd.DataFrame(
+                    {"index": index_list, "target": target_list, "tags": tag_list}
+                )
+                # Append to file in each iteration
+                if i == 0:
+                    tag_df.to_csv(os.path.join(outdir, "train_tags.csv"), index=False)
+                else:
+                    tag_df.to_csv(
+                        os.path.join(outdir, "train_tags.csv"),
+                        mode="a",
+                        index=False,
+                        header=False,
+                    )
+            self.tags_df = tag_df
+
+            # Convert sets to lists and save unique tags per class to CSV
+            unique_tags_df = pd.DataFrame(
+                [(label, list(tags)) for label, tags in unique_tags_per_class.items()],
+                columns=["class", "tags"],
+            )
+            unique_tags_df.to_csv(
+                os.path.join(outdir, "unique_tags_per_class.csv"), index=False
+            )
+
+    def precompute_text_embeddings(self):
+        # check if they are saved
+        if os.path.isfile(os.path.join(self.data_root, "clip_embeddings.pt")):
+            print(
+                f"Loading text embeddings from {os.path.join(self.data_root, 'clip_embeddings.pt')}"
+            )
+            precomputed_embeddings = torch.load(
+                os.path.join(self.data_root, "clip_embeddings.pt")
+            )
+            return precomputed_embeddings
+        else:
+            print("Precomputing text embeddings...")
+            precomputed_embeddings = {}
+            with torch.no_grad():
+                for batch in tqdm(self.dataloaders["train"]):
+
+                    indices = batch["index"]
+                    tags = [self.index_to_tags[index.item()] for index in indices]
+
+                    comma_separated_tags = [
+                        f"a photo with {tags[i]}" for i in range(len(tags))
+                    ]
+
+                    text_inputs = self.tokenizer(
+                        comma_separated_tags,
+                        padding="max_length",
+                        return_tensors="pt",
+                    ).to(self.device)
+                    b_feats = self.clip_model.get_text_features(**text_inputs)
+                    for prompt, emb in zip(comma_separated_tags, b_feats):
+                        precomputed_embeddings[prompt.replace("a photo with ", "")] = (
+                            emb.detach().cpu()
+                        )
+                torch.save(
+                    precomputed_embeddings,
+                    os.path.join(self.data_root, "clip_embeddings.pt"),
+                )
+        return precomputed_embeddings

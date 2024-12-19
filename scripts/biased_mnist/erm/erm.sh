@@ -1,1 +1,1 @@
-python tools/train.py --cfg configs/biased_mnist/erm/erm.yaml
+python tools/train.py --cfg configs/biased_mnist/erm/dev.yaml

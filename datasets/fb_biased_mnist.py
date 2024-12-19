@@ -4,6 +4,7 @@ MIT license
 
 Python implementation of Biased-MNIST.
 """
+
 import logging
 import os
 import pickle
@@ -112,12 +113,12 @@ class BiasedMNIST(MNIST):
         if self.load_bias_feature:
             if train_corr:
                 bias_feature_dir = f"{bias_feature_root}/train{train_corr}-corrA{data_label_correlation1}-corrB{data_label_correlation2}-seed{seed}"
-                logging.info(f"load bias feature: {bias_feature_dir}")
+                # logging.info(f"load bias feature: {bias_feature_dir}")
                 self.bias_features = torch.load(f"{bias_feature_dir}/bias_feats.pt")
                 self.marginal = torch.load(f"{bias_feature_dir}/marginal.pt")
             else:
                 bias_feature_dir = f"{bias_feature_root}/color_mnist-corrA{data_label_correlation1}-corrB{data_label_correlation2}-seed{seed}"
-                logging.info(f"load bias feature: {bias_feature_dir}")
+                # logging.info(f"load bias feature: {bias_feature_dir}")
                 self.bias_features = torch.load(f"{bias_feature_dir}/bias_feats.pt")
                 self.marginal = torch.load(f"{bias_feature_dir}/marginal.pt")
 
@@ -128,7 +129,7 @@ class BiasedMNIST(MNIST):
             / split
         )
         if save_path.is_dir():
-            logging.info(f"use existing color_mnist from {save_path}")
+            # logging.info(f"use existing color_mnist from {save_path}")
             self.data = pickle.load(open(save_path / "data.pkl", "rb"))
             self.targets = pickle.load(open(save_path / "targets.pkl", "rb"))
             self.biased_targets = pickle.load(
@@ -159,7 +160,7 @@ class BiasedMNIST(MNIST):
             self.biased_targets = self.biased_targets[indices]
             self.biased_targets2 = self.biased_targets2[indices]
 
-            logging.info(f"save color_mnist to {save_path}")
+            # logging.info(f"save color_mnist to {save_path}")
             save_path.mkdir(parents=True, exist_ok=True)
             pickle.dump(self.data, open(save_path / "data.pkl", "wb"))
             pickle.dump(self.targets, open(save_path / "targets.pkl", "wb"))
@@ -283,11 +284,18 @@ class BiasedMNIST(MNIST):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        if self.load_bias_feature:
-            bias_feat = self.bias_features[index]
-            return img, target, bias, bias2, index, bias_feat
-        else:
-            return img, target, bias, bias2, index
+        # if self.load_bias_feature:
+        #     bias_feat = self.bias_features[index]
+        #     return img, target, bias, bias2, index, bias_feat
+        # else:
+        #     return img, target, bias, bias2, index
+        return {
+            "inputs": img,
+            "targets": target,
+            "background": bias,
+            "foreground": bias2,
+            "index": index,
+        }
 
 
 class ColourBiasedMNIST(BiasedMNIST):
@@ -438,40 +446,44 @@ def get_color_mnist(
     load_bias_feature=False,
     given_y=True,
     train_corr=None,
+    transform=None,
 ):
-    logging.info(
-        f"get_color_mnist - split: {split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}"
-    )
-    normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-    if aug:
-        prob = 0.5
-        train_transform = transforms.Compose(
-            [
-                transforms.RandomApply(
-                    [
-                        transforms.RandomResizedCrop(28, scale=(0.75, 1)),
-                    ],
-                    p=prob,
-                ),
-                transforms.RandomApply(
-                    [
-                        transforms.RandomRotation(20),
-                    ],
-                    p=prob,
-                ),
-                transforms.RandomApply(
-                    [
-                        transforms.RandomAffine(20),
-                    ],
-                    p=prob,
-                ),
-                # transforms.GaussianBlur(3),
-                transforms.ToTensor(),
-                normalize,
-            ]
-        )
+    # logging.info(
+    #     f"get_color_mnist - split: {split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}"
+    # )
+    if transform is None:
+        normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        if aug:
+            prob = 0.5
+            train_transform = transforms.Compose(
+                [
+                    transforms.RandomApply(
+                        [
+                            transforms.RandomResizedCrop(28, scale=(0.75, 1)),
+                        ],
+                        p=prob,
+                    ),
+                    transforms.RandomApply(
+                        [
+                            transforms.RandomRotation(20),
+                        ],
+                        p=prob,
+                    ),
+                    transforms.RandomApply(
+                        [
+                            transforms.RandomAffine(20),
+                        ],
+                        p=prob,
+                    ),
+                    # transforms.GaussianBlur(3),
+                    transforms.ToTensor(),
+                    normalize,
+                ]
+            )
+        else:
+            train_transform = transforms.Compose([transforms.ToTensor(), normalize])
     else:
-        train_transform = transforms.Compose([transforms.ToTensor(), normalize])
+        train_transform = transform
     if two_crop:
         train_transform = TwoCropTransform(train_transform)
 

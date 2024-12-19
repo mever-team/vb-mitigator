@@ -5,7 +5,7 @@ import torch
 from datasets.builder import get_dataset
 from models.builder import get_model
 from tools.metrics import metrics_dicts, get_performance
-
+from tools.metrics.utils import AverageMeter
 from tools.utils import log_msg, save_checkpoint, load_checkpoint, setup_logger
 from configs.cfg import show_cfg
 
@@ -46,6 +46,8 @@ class BaseTrainer:
         self.num_class = dataset["num_class"]
         self.biases = dataset["biases"]
         self.dataloaders = dataset["dataloaders"]
+        self.data_root = dataset["root"]
+        self.target2name = dataset["target2name"]
         # self.batch_structure = dataset["batch_structure"]
 
     def _setup_optimizer(self):
@@ -115,13 +117,24 @@ class BaseTrainer:
         loss = self.criterion(outputs, targets)
         self._loss_backward(loss)
         self._optimizer_step()
+        return {"train_cls_loss": loss}
 
     def _train_epoch(self):
         self._set_train()
         self.current_lr = self.scheduler.get_last_lr()[0]
+        avg_loss = None
         for batch in self.dataloaders["train"]:
-            self._train_iter(batch)
+            bsz = batch["targets"].shape[0]
+            loss_dict = self._train_iter(batch)
+            # initialize if needed
+            if avg_loss is None:
+                avg_loss = {key: AverageMeter() for key in loss_dict.keys()}
+            # Update avg_loss for each key in loss_dict
+            for key, value in loss_dict.items():
+                avg_loss[key].update(value.item(), bsz)
         self.scheduler.step()
+        avg_loss = {key: value.avg for key, value in avg_loss.items()}
+        return avg_loss
 
     def _val_iter(self, batch):
         batch_dict = {}
@@ -214,16 +227,38 @@ class BaseTrainer:
             if self.cfg.LOG.WANDB:
                 wandb.run.summary["best_performance"] = self.best_performance
         # worklog.txt
-        with open(os.path.join(self.log_path, "out.log"), "a") as writer:
-            lines = [
-                "-" * 25 + os.linesep,
-                "epoch: {}".format(self.current_epoch) + os.linesep,
-                "lr: {:.6f}".format(float(self.current_lr)) + os.linesep,
-            ]
-            for k, v in log_dict.items():
-                lines.append("{}: {:.2f}".format(k, v) + os.linesep)
-            lines.append("-" * 25 + os.linesep)
-            writer.writelines(lines)
+        # Write to out.log with keys as columns
+
+        log_file_path = os.path.join(self.log_path, "out.log")
+        log_keys = ["epoch", "lr"] + list(log_dict.keys())
+        column_width = (
+            max(len(key) for key in log_keys) + 2
+        )  # Adjust column width dynamically
+
+        if self.current_epoch == 0:  # Create headers if file is new
+            with open(log_file_path, "a", encoding="utf-8") as writer:
+                # Header
+                header = "".join(f"{key:<{column_width}}" for key in log_keys)
+                writer.write(header + os.linesep)
+                writer.write("-" * len(header) + os.linesep)
+
+        with open(log_file_path, "a", encoding="utf-8") as writer:
+            # Row data
+            row = f"{self.current_epoch:<{column_width}}{self.current_lr:<{column_width}.6f}"
+            row += "".join(
+                f"{log_dict[key]:<{column_width}.2f}" for key in log_dict.keys()
+            )
+            writer.write(row + os.linesep)
+
+        # Optional: Write to CSV for visualization
+        csv_file_path = os.path.join(self.log_path, "logs.csv")
+        if not os.path.exists(csv_file_path):
+            with open(csv_file_path, "w", encoding="utf-8") as csv_file:
+                csv_file.write(",".join(log_keys) + os.linesep)
+
+        with open(csv_file_path, "a", encoding="utf-8") as csv_file:
+            row = [self.current_epoch, self.current_lr] + list(log_dict.values())
+            csv_file.write(",".join(map(str, row)) + os.linesep)
 
     def _update_best(self, log_dict):
         if (
@@ -274,8 +309,8 @@ class BaseTrainer:
     def train(self):
         for epoch in range(self.cfg.SOLVER.EPOCHS):
             self.current_epoch = epoch
-            self._train_epoch()
-            log_dict = {}
+            log_dict = self._train_epoch()
+            # log_dict = {}
             if self.cfg.LOG.TRAIN_PERFORMANCE:
                 train_performance = self._validate_epoch(stage="train")
                 train_log_dict = self.build_log_dict(train_performance, stage="train")
