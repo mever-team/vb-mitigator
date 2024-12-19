@@ -2,4 +2,10 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+data/*/*
+!data/*/unique_tags_per_class.csv
+!data/*/train_tags.csv
+!data/*/relevant_tags/
+!data/pickles/
+!data/clusters/
 /output/
