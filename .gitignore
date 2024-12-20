@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+pretrained/*
 data/*/*
 !data/*/unique_tags_per_class.csv
 !data/*/train_tags.csv
