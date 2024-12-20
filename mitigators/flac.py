@@ -100,7 +100,7 @@ class FLACTrainer(BaseTrainer):
                 pr_feat, features, targets, self.cfg.MITIGATOR.FLAC.LOSS.DELTA
             )
         loss_cl = self.criterion(outputs, targets)
-        loss = loss_cl + loss_flac
+        loss = self.cfg.MITIGATOR.FLAC.LOSS.CE_WEIGHT * loss_cl + loss_flac
         self._loss_backward(loss)
         self._optimizer_step()
         return {"train_cls_loss": loss_cl, "train_flac_loss": loss_flac}

@@ -48,6 +48,10 @@ class BaseTrainer:
         self.dataloaders = dataset["dataloaders"]
         self.data_root = dataset["root"]
         self.target2name = dataset["target2name"]
+        # dataset["ba_groups"] exists, set self.ba_groups accordingly, else set to None
+        # print(dataset["ba_groups"])
+        self.ba_groups = dataset["ba_groups"] if "ba_groups" in dataset else None
+        # print(self.ba_groups)
         # self.batch_structure = dataset["batch_structure"]
 
     def _setup_optimizer(self):
@@ -156,6 +160,7 @@ class BaseTrainer:
             all_data = {key: [] for key in self.biases}
             all_data["targets"] = []
             all_data["predictions"] = []
+            
             losses = []
             for batch in self.dataloaders[stage]:
                 batch_dict, loss = self._val_iter(batch)
@@ -165,6 +170,9 @@ class BaseTrainer:
 
             for key in all_data:
                 all_data[key] = np.concatenate(all_data[key])
+            #metric specific data
+            if self.ba_groups is not None:
+                all_data["ba_groups"] = self.ba_groups
             performance = get_performance[self.cfg.METRIC](all_data)
             performance["loss"] = np.mean(losses)
         return performance
@@ -246,7 +254,7 @@ class BaseTrainer:
             # Row data
             row = f"{self.current_epoch:<{column_width}}{self.current_lr:<{column_width}.6f}"
             row += "".join(
-                f"{log_dict[key]:<{column_width}.2f}" for key in log_dict.keys()
+                f"{log_dict[key]:<{column_width}.4f}" for key in log_dict.keys()
             )
             writer.write(row + os.linesep)
 

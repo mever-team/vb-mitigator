@@ -5,17 +5,16 @@ wg_ovr_dict = {"best": "high", "performance": "worst_group_accuracy"}
 
 
 def wg_ovr(data_dict):
-    print(data_dict)
     sensitive_keys = [
         key for key in data_dict.keys() if key not in ["targets", "predictions"]
     ]
     for key in sensitive_keys:
         data_dict[key] = [f"{key}_{value}" for value in data_dict[key]]
     sensitive_keys.append("targets")
-    sensitive = fb.Fork(*[fb.categories @ data_dict[key] for key in sensitive_keys])
-    sensitive = sensitive.intersectional()
-    print(sensitive)
-
+    sensitive = fb.Dimensions(*[fb.categories @ data_dict[key] for key in sensitive_keys])
+    sensitive = sensitive.intersectional()  # automatically find non-empty intersections
+    sensitive = sensitive.strict()  # keep only intersections that have no children
+    # print(sensitive.keys().values.values())
     y = data_dict["targets"]
     yhat = data_dict["predictions"]
 
@@ -32,15 +31,18 @@ def wg_ovr(data_dict):
     #         predictions=clyhat, labels=cly, sensitive=sensitive
     #     )
     # all_reports = fb.Fork(reports)
-    report = fb.unireport(
-        predictions=yhat, labels=y, sensitive=sensitive, metrics=[fb.accuracy]
-    )
-    # print(report.min.accuracy)
-    # # print(np.mean(list(all_reports.min.accuracy.branches().values())))
+    report = fb.reports.pairwise(predictions=yhat, labels=y, sensitive=sensitive)
+    print(report.acc["sensitive_attribute_1_1&1"])    
+   
 
-    # fb.text_visualize(report)
+
+
+
+
+
+
     out = {
-        "worst_group_accuracy": report.min.accuracy,
+        "worst_group_accuracy": report.min.acc,
         "overall": round(acc, 3),
     }
     # print(out)
@@ -50,9 +52,8 @@ def wg_ovr(data_dict):
 if __name__ == "__main__":
 
     data_dict = {
-        "targets": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-        "predictions": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-        "sensitive_attribute_1": np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-        # "sensitive_attribute_2": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        "targets": np.array([0, 0, 0, 0, 0, 1, 1, 1, 1, 1]),
+        "predictions": np.array([0, 0, 0, 0, 1, 1, 1, 1, 1, 0]),
+        "sensitive_attribute_1": np.array([0, 0, 0, 0, 1, 1, 1, 1, 1, 0]),
     }
     _ = wg_ovr(data_dict)

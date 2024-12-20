@@ -130,23 +130,23 @@ class MAVIASTrainer(BaseTrainer):
 
     def get_irrelevant_tags(self):
         # check if self.tags_df["irrelevant_tags"] exists
-        if "irrelevant_tags" in self.tags_df.columns:
-            return
-        else:
+        # if "irrelevant_tags" in self.tags_df.columns:
+        #     return
+        # else:
 
-            def calc_irrelevant_tags(row):
-                tags = str(row["tags"]) if isinstance(row["tags"], str) else ""
-                all_tags = set(tag.strip() for tag in tags.split(" | "))
-                relevant = set(self.relevant_tags.get(row["target"], []))
-                return " | ".join(all_tags - relevant)
+        def calc_irrelevant_tags(row):
+            tags = str(row["tags"]) if isinstance(row["tags"], str) else ""
+            all_tags = set(tag.strip() for tag in tags.split(" | "))
+            relevant = set(self.relevant_tags.get(row["target"], []))
+            return " | ".join(all_tags - relevant)
 
-            self.tags_df["irrelevant_tags"] = self.tags_df.apply(
-                calc_irrelevant_tags, axis=1
-            )
-            # save to csv
-            self.tags_df.to_csv(
-                os.path.join(self.data_root, "train_tags.csv"), index=False
-            )
+        self.tags_df["irrelevant_tags"] = self.tags_df.apply(
+            calc_irrelevant_tags, axis=1
+        )
+        # save to csv
+        self.tags_df.to_csv(
+            os.path.join(self.data_root, "train_tags.csv"), index=False
+        )
 
     def get_relevant_tags(self):
         llm_name = self.cfg.MITIGATOR.MAVIAS.LLM.TYPE
@@ -158,6 +158,7 @@ class MAVIASTrainer(BaseTrainer):
         unique_tags_df = pd.read_csv(
             os.path.join(self.data_root, "unique_tags_per_class.csv")
         )
+        
         unique_tags_df["tags"] = unique_tags_df["tags"].apply(ast.literal_eval)
 
         self.relevant_tags = {}
@@ -209,6 +210,8 @@ class MAVIASTrainer(BaseTrainer):
                 Conversely, a tag is irrelevant if it refers to elements that are not an intrinsic part of the object. Irrelevant tags may include: 
                 background details, environmental context, colors (unless a defining characteristic), lighting, textures, other objects, or other non-essential contextual elements.
                 For example, in the case of the class "bee," tags like "sky," "flower," or "blue" would be irrelevant, as they describe the environment or background rather than the bee itself.
+
+                Also, note that when it comes to humans, attributes like gender, race, age, religion, or other personal characteristics are considered irrelevant unless they are essential to identify the target class. 
 
                 Please output only the relevant tags in JSON format only (i.e., {
                 relevant_tags: [
@@ -348,39 +351,39 @@ class MAVIASTrainer(BaseTrainer):
 
     def precompute_text_embeddings(self):
         # check if they are saved
-        if os.path.isfile(os.path.join(self.data_root, "clip_embeddings.pt")):
-            print(
-                f"Loading text embeddings from {os.path.join(self.data_root, 'clip_embeddings.pt')}"
+        # if os.path.isfile(os.path.join(self.data_root, "clip_embeddings.pt")):
+        #     print(
+        #         f"Loading text embeddings from {os.path.join(self.data_root, 'clip_embeddings.pt')}"
+        #     )
+        #     precomputed_embeddings = torch.load(
+        #         os.path.join(self.data_root, "clip_embeddings.pt")
+        #     )
+        #     return precomputed_embeddings
+        # else:
+        print("Precomputing text embeddings...")
+        precomputed_embeddings = {}
+        with torch.no_grad():
+            for batch in tqdm(self.dataloaders["train"]):
+
+                indices = batch["index"]
+                tags = [self.index_to_tags[index.item()] for index in indices]
+
+                comma_separated_tags = [
+                    f"a photo with {tags[i]}" for i in range(len(tags))
+                ]
+
+                text_inputs = self.tokenizer(
+                    comma_separated_tags,
+                    padding="max_length",
+                    return_tensors="pt",
+                ).to(self.device)
+                b_feats = self.clip_model.get_text_features(**text_inputs)
+                for prompt, emb in zip(comma_separated_tags, b_feats):
+                    precomputed_embeddings[prompt.replace("a photo with ", "")] = (
+                        emb.detach().cpu()
+                    )
+            torch.save(
+                precomputed_embeddings,
+                os.path.join(self.data_root, "clip_embeddings.pt"),
             )
-            precomputed_embeddings = torch.load(
-                os.path.join(self.data_root, "clip_embeddings.pt")
-            )
-            return precomputed_embeddings
-        else:
-            print("Precomputing text embeddings...")
-            precomputed_embeddings = {}
-            with torch.no_grad():
-                for batch in tqdm(self.dataloaders["train"]):
-
-                    indices = batch["index"]
-                    tags = [self.index_to_tags[index.item()] for index in indices]
-
-                    comma_separated_tags = [
-                        f"a photo with {tags[i]}" for i in range(len(tags))
-                    ]
-
-                    text_inputs = self.tokenizer(
-                        comma_separated_tags,
-                        padding="max_length",
-                        return_tensors="pt",
-                    ).to(self.device)
-                    b_feats = self.clip_model.get_text_features(**text_inputs)
-                    for prompt, emb in zip(comma_separated_tags, b_feats):
-                        precomputed_embeddings[prompt.replace("a photo with ", "")] = (
-                            emb.detach().cpu()
-                        )
-                torch.save(
-                    precomputed_embeddings,
-                    os.path.join(self.data_root, "clip_embeddings.pt"),
-                )
         return precomputed_embeddings

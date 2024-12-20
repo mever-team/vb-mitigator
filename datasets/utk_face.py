@@ -38,7 +38,6 @@ class BiasedUTKFace:
             / "pickles"
             / f"biased_utk_face-target_{target_attr}-bias_{bias_attr}-{bias_rate}"
         )
-        # print(save_path, "paok")
         if save_path.is_dir():
             print(f"use existing biased_utk_face from {save_path}")
             data_split = "train" if self.train else "test"
@@ -50,7 +49,6 @@ class BiasedUTKFace:
                     f"./{p}/clusters/utk_face_rand_indices_{bias_attr}.pkl"
                 )
 
-                # print(save_path.resolve(), "paok")
                 if not save_path.exists():
                     rand_indices = torch.randperm(len(self.targets))
                     pickle.dump(rand_indices, open(save_path.resolve(), "wb"))
@@ -66,7 +64,7 @@ class BiasedUTKFace:
                     indices = rand_indices[num_valid:]
 
                 indices = indices.numpy()
-
+                # print(self.files.shape, self.targets.shape, self.bias_targets.shape, indices.shape, np.min(indices))
                 self.files = self.files[indices]
                 self.targets = self.targets[indices]
                 self.bias_targets = self.bias_targets[indices]
@@ -183,7 +181,7 @@ class BiasedUTKFace:
         if self.transform is not None:
             X = self.transform(X)
 
-        return X, target, bias, index
+        return {"inputs": X, "targets": target, self.bias_attr: bias, "index": index}
 
     def __len__(self):
         return len(self.files)
@@ -201,6 +199,7 @@ def get_utk_face(
     two_crop=False,
     ratio=0,
     given_y=True,
+    transform=None,
 ):
     logging.info(
         f"get_utk_face - split: {split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}"
@@ -210,30 +209,31 @@ def get_utk_face(
     train = split == "train"
 
     if train:
-        if aug:
-            transform = transforms.Compose(
-                [
-                    transforms.RandomResizedCrop(size=image_size, scale=(0.2, 1.0)),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.RandomApply(
-                        [transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8
-                    ),
-                    transforms.RandomGrayscale(p=0.2),
-                    transforms.ToTensor(),
-                    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                ]
-            )
-        else:
-            transform = transforms.Compose(
-                [
-                    transforms.RandomResizedCrop(image_size),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
-                    ),
-                ]
-            )
+        if transform is None:
+            if aug:
+                transform = transforms.Compose(
+                    [
+                        transforms.RandomResizedCrop(size=image_size, scale=(0.2, 1.0)),
+                        transforms.RandomHorizontalFlip(),
+                        transforms.RandomApply(
+                            [transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8
+                        ),
+                        transforms.RandomGrayscale(p=0.2),
+                        transforms.ToTensor(),
+                        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                    ]
+                )
+            else:
+                transform = transforms.Compose(
+                    [
+                        transforms.RandomResizedCrop(image_size),
+                        transforms.RandomHorizontalFlip(),
+                        transforms.ToTensor(),
+                        transforms.Normalize(
+                            mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)
+                        ),
+                    ]
+                )
 
     else:
         transform = transforms.Compose(
