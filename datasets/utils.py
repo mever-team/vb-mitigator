@@ -195,7 +195,7 @@ def download_waterbirds(root):
         print(f"Downloaded data to {download_path}.")
 
         # Extract the dataset
-        print(f"Extracting UTKFace dataset to {extract_path}...")
+        print(f"Extracting Waterbirds dataset to {extract_path}...")
         with zipfile.ZipFile(download_path, "r") as zip_ref:
             zip_ref.extractall(extract_path)
 

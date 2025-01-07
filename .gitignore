@@ -10,4 +10,3 @@ data/*/*
 !data/pickles/
 !data/clusters/
 /output/
-/pretrained/

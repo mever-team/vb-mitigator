@@ -1,0 +1,25 @@
+EXPERIMENT:
+  NAME: "flac"
+  TAG: "dev"
+  PROJECT: "waterbirds_baselines"
+DATASET:
+  TYPE: "waterbirds"
+  BIASES: ["background"]
+MITIGATOR:
+  TYPE: "flac"
+  FLAC:
+    LOSS:
+      ALPHA: 1000.0
+      CE_WEIGHT: 1.0
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 20
+  LR: 0.001
+  TYPE: "Adam"
+  WEIGHT_DECAY: 0.0
+  SCHEDULER:
+    LR_DECAY_STAGES: [60]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet18"
+METRIC: "wg_ovr"

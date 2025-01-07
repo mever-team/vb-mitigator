@@ -1,0 +1,1 @@
+python tools/train.py --cfg configs/waterbirds/badd/dev.yaml

@@ -3,6 +3,7 @@ from .fb_biased_mnist import get_color_mnist as get_fb_color_mnist
 from ram import get_transform
 from .custom_transforms import get_transform as get_transform_padded
 from .utk_face import get_utk_face
+from .waterbirds import get_waterbirds
 
 def get_dataset(cfg):
     dataset_name = cfg.DATASET.TYPE
@@ -195,5 +196,30 @@ def get_dataset(cfg):
                 ),
             )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
-
+    elif dataset_name == "waterbirds":
+        train_loader, val_loader, test_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS)
+        
+        dataset = {}
+        dataset["num_class"] = 2
+        dataset["biases"] = ["background"]
+        dataset["dataloaders"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": test_loader,
+        }
+        dataset["root"] = cfg.DATASET.WATERBIRDS.ROOT
+        dataset["target2name"] = {
+            0: "bird",
+            1: "bird",
+        }
+        if method_name == "mavias":
+            tag_train_loader,_,_ = get_waterbirds(
+                cfg.DATASET.WATERBIRDS.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                n_workers=cfg.DATASET.NUM_WORKERS,
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+            dataset["dataloaders"]["tag_train"] = tag_train_loader
     return dataset

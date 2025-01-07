@@ -32,17 +32,11 @@ def wg_ovr(data_dict):
     #     )
     # all_reports = fb.Fork(reports)
     report = fb.reports.pairwise(predictions=yhat, labels=y, sensitive=sensitive)
-    print(report.acc["sensitive_attribute_1_1&1"])    
+    # print(report.acc)    
    
 
-
-
-
-
-
-
     out = {
-        "worst_group_accuracy": report.min.acc,
+        "worst_group_accuracy": float(report.min.acc),
         "overall": round(acc, 3),
     }
     # print(out)

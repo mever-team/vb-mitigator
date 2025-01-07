@@ -2,7 +2,6 @@ import os
 
 import torch
 from models.resnet import ResNet18
-from models.resnet import BAddResNet50
 from torchvision.models.resnet import resnet50
 import gdown
 from torch import nn
@@ -18,9 +17,8 @@ bcc_urls_dict = {
     "celeba_makeup": "https://drive.google.com/uc?id=1w1h3bKvNV2sCpKyB2wz_aL7i_noqQLX8",
     "utkface_race": "https://drive.google.com/uc?id=1u7KTRXT3uYetIUiCuFgmC-Ifrzw2dpFA",
     "utkface_age": "https://drive.google.com/uc?id=1gnnVKJPY8I0br9MzQCfY1B44VU5bdffn",
-    "waterbirds_background": "TODO",
+    "waterbirds_background": "https://drive.google.com/uc?id=1jH9B6ghqiXkHrK8sgp5vGqPYx6puUAHY",
 }
-
 
 def get_model_dict(dataset_name, bias_name):
     model_dir = "./pretrained"

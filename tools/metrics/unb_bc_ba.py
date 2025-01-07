@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import fairbench as fb
 
 unb_bc_ba_dict = {"best": "high", "performance": "unb_acc"}
 
