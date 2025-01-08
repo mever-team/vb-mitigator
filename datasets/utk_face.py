@@ -2,12 +2,13 @@ import logging
 import os
 import pickle
 from pathlib import Path
+import random
 
 import PIL
 import numpy as np
 import torch
 import torch.utils.data
-from datasets.utils import TwoCropTransform, get_confusion_matrix
+from datasets.utils import TwoCropTransform, get_confusion_matrix, get_sampling_weights
 from torch.utils.data.sampler import WeightedRandomSampler
 from torchvision import transforms
 from datasets.utils import download_utkface
@@ -185,6 +186,7 @@ class BiasedUTKFace:
 
     def __len__(self):
         return len(self.files)
+    
 
 
 def get_utk_face(
@@ -200,6 +202,7 @@ def get_utk_face(
     ratio=0,
     given_y=True,
     transform=None,
+    sampler=None
 ):
     logging.info(
         f"get_utk_face - split: {split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}"
@@ -272,6 +275,13 @@ def get_utk_face(
         if ratio > 0:
             weights = clip_max_ratio(np.array(weights))
         sampler = WeightedRandomSampler(weights, len(weights), replacement=True)
+    # else:
+    #     sampler = None
+    elif sampler is not None and split == "train":
+        if sampler == "weighted":
+            #*[torch.tensor(bias) for bias in dataset.bias_targets]
+            weights = get_sampling_weights(dataset.files, dataset.targets,*[torch.tensor(dataset.bias_targets)])
+            sampler = WeightedRandomSampler(weights, len(dataset), replacement=True)
     else:
         sampler = None
 

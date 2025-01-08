@@ -10,7 +10,8 @@ def get_dataset(cfg):
     method_name = cfg.MITIGATOR.TYPE
 
     if dataset_name == "biased_mnist":
-        train_loader = get_color_mnist(
+        if method_name == "groupdro":
+            train_loader = get_color_mnist(
             cfg.DATASET.BIASED_MNIST.ROOT,
             batch_size=cfg.SOLVER.BATCH_SIZE,
             data_label_correlation=cfg.DATASET.BIASED_MNIST.CORR,
@@ -18,7 +19,18 @@ def get_dataset(cfg):
             split="train",
             seed=cfg.EXPERIMENT.SEED,
             aug=False,
+            sampler="weighted",
         )
+        else:
+            train_loader = get_color_mnist(
+                cfg.DATASET.BIASED_MNIST.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                data_label_correlation=cfg.DATASET.BIASED_MNIST.CORR,
+                n_confusing_labels=9,
+                split="train",
+                seed=cfg.EXPERIMENT.SEED,
+                aug=False,
+            )
 
         val_loader = get_color_mnist(
             cfg.DATASET.BIASED_MNIST.ROOT,
@@ -40,6 +52,7 @@ def get_dataset(cfg):
         )
         dataset = {}
         dataset["num_class"] = 10
+        dataset["num_groups"] = 10 * 10
         dataset["biases"] = ["background"]
         dataset["dataloaders"] = {
             "train": train_loader,
@@ -73,9 +86,24 @@ def get_dataset(cfg):
                 ),
             )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
+        
+
 
     elif dataset_name == "fb_biased_mnist":
-        train_loader = get_fb_color_mnist(
+        if method_name == "groupdro":
+            train_loader = get_fb_color_mnist(
+                cfg.DATASET.FB_BIASED_MNIST.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                data_label_correlation1=cfg.DATASET.FB_BIASED_MNIST.CORR_BG,
+                data_label_correlation2=cfg.DATASET.FB_BIASED_MNIST.CORR_FG,
+                n_confusing_labels=9,
+                split="train",
+                seed=cfg.EXPERIMENT.SEED,
+                aug=False,
+                sampler="weighted",
+            )
+        else:
+            train_loader = get_fb_color_mnist(
             cfg.DATASET.FB_BIASED_MNIST.ROOT,
             batch_size=cfg.SOLVER.BATCH_SIZE,
             data_label_correlation1=cfg.DATASET.FB_BIASED_MNIST.CORR_BG,
@@ -109,6 +137,7 @@ def get_dataset(cfg):
 
         dataset = {}
         dataset["num_class"] = 10
+        dataset["num_groups"] = 10 * 10 * 10
         dataset["biases"] = ["background", "foreground"]
         dataset["dataloaders"] = {
             "train": train_loader,
@@ -144,7 +173,18 @@ def get_dataset(cfg):
             )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
     elif dataset_name == "utkface":
-        train_loader = get_utk_face(
+        if method_name == "groupdro":
+            train_loader = get_utk_face(
+            cfg.DATASET.UTKFACE.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            split="train",
+            bias_attr=cfg.DATASET.UTKFACE.BIAS,
+            image_size=cfg.DATASET.UTKFACE.IMAGE_SIZE,
+            ratio=cfg.DATASET.UTKFACE.RATIO,
+            sampler = "weighted"
+        )
+        else:
+            train_loader = get_utk_face(
             cfg.DATASET.UTKFACE.ROOT,
             batch_size=cfg.SOLVER.BATCH_SIZE,
             split="train",
@@ -171,6 +211,7 @@ def get_dataset(cfg):
 
         dataset = {}
         dataset["num_class"] = 2
+        dataset["num_groups"] = 2 * 2
         dataset["biases"] = [cfg.DATASET.UTKFACE.BIAS]
         dataset["dataloaders"] = {
             "train": train_loader,
@@ -197,11 +238,18 @@ def get_dataset(cfg):
             )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
     elif dataset_name == "waterbirds":
-        train_loader, val_loader, test_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS)
-        
+        if method_name == "groupdro":
+            train_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS,split="train", sampler="weighted")
+        else:
+            train_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS,split="train")
+
+        val_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS,split="val")
+        test_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS,split="test")
+
         dataset = {}
         dataset["num_class"] = 2
         dataset["biases"] = ["background"]
+        dataset["num_groups"] = 2 * 2
         dataset["dataloaders"] = {
             "train": train_loader,
             "val": val_loader,

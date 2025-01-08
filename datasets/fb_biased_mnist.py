@@ -16,12 +16,14 @@ from PIL import Image
 from datasets.utils import (
     TwoCropTransform,
     get_confusion_matrix,
+    get_sampling_weights,
     get_unsup_confusion_matrix,
 )
 from torch.utils import data
 from torchvision import transforms
 from torchvision.datasets import MNIST
 import random
+from torch.utils.data.sampler import WeightedRandomSampler
 
 
 class BiasedMNIST(MNIST):
@@ -447,6 +449,7 @@ def get_color_mnist(
     given_y=True,
     train_corr=None,
     transform=None,
+    sampler=None,
 ):
     # logging.info(
     #     f"get_color_mnist - split: {split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}"
@@ -569,8 +572,12 @@ def get_color_mnist(
             sampler = data.WeightedRandomSampler(
                 weights, len(weights), replacement=True
             )
-        else:
-            sampler = None
+        elif sampler is not None and split == "train":
+            if sampler == "weighted":
+                weights = get_sampling_weights(dataset.data, dataset.targets, *[torch.tensor(bias) for bias in [dataset.biased_targets, dataset.biased_targets2]])
+                sampler = WeightedRandomSampler(weights, len(dataset), replacement=True)
+            else:
+                sampler = None
 
         dataloader = data.DataLoader(
             dataset=dataset,

@@ -1,0 +1,20 @@
+EXPERIMENT:
+  NAME: "groupdro"
+  TAG: "dev"
+  PROJECT: "biased_mnist_baselines"
+DATASET:
+  TYPE: "biased_mnist"
+  BIASES: ["color"]
+MITIGATOR:
+  TYPE: "groupdro"
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 70
+  LR: 0.001
+  TYPE: "Adam"
+  SCHEDULER:
+    LR_DECAY_STAGES: [60]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "simple_conv"
+METRIC: "acc"

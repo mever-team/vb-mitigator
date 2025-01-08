@@ -53,6 +53,7 @@ class BaseTrainer:
         self.ba_groups = dataset["ba_groups"] if "ba_groups" in dataset else None
         # print(self.ba_groups)
         # self.batch_structure = dataset["batch_structure"]
+        
 
     def _setup_optimizer(self):
         if self.cfg.SOLVER.TYPE == "SGD":

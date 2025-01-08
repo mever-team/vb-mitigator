@@ -1,3 +1,4 @@
+import random
 import torch
 import os
 import zipfile
@@ -270,3 +271,95 @@ def download_imagenet9(root):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         raise
+
+
+
+def get_subsample_group_indices(imgs, targets, bias_targets, bias_rate):
+    """
+    Returns subsampled group indices based on the bias attribute and bias rate.
+    """
+    # assert subsample_which_shortcut in ["bias", "both"], "Unsupported shortcut type"
+
+    # Calculate the minimum number of samples per subgroup
+    num_samples = len(imgs)
+    num_classes = targets.max().item() + 1
+    num_biases = bias_targets.max().item() + 1
+    min_size = int(num_samples / num_classes * (1 - bias_rate))
+
+    # Initialize the indices list
+    indices = []
+
+    # Loop through the target and bias groups
+    for target_class in range(num_classes):
+        target_mask = targets == target_class
+        for bias_class in range(num_biases):
+            bias_mask = bias_targets == bias_class
+            group_mask = target_mask & bias_mask
+
+            group_indices = torch.nonzero(group_mask).squeeze().tolist()
+            random.shuffle(group_indices)
+
+            # if subsample_which_shortcut == "bias" or subsample_which_shortcut == "both":
+            sampled_indices = group_indices[:min_size]
+            indices.extend(sampled_indices)
+
+    return indices
+
+def get_sampling_weights(imgs, targets, *bias_targets_list):
+    """
+    Calculates and returns sampling weights for each sample, generalized for multiple biases.
+
+    Args:
+        imgs (Tensor): Dataset images or data points (used only for length).
+        targets (Tensor): Target class labels.
+        *bias_targets_list: Arbitrary number of bias attribute label Tensors.
+
+    Returns:
+        Tensor: Sampling weights for each sample.
+    """
+    if isinstance(targets, list):
+        targets = torch.tensor(targets)
+
+    num_classes = targets.max().item() + 1
+    
+    num_bias_categories = [bias_targets.max().item() + 1 for bias_targets in bias_targets_list]
+
+    # Calculate total number of groups
+    num_groups = num_classes * torch.prod(torch.tensor(num_bias_categories))
+
+    # Initialize group counts
+    group_counts = torch.zeros(num_groups)
+
+    # Count samples per group
+    for idx in range(len(imgs)):
+        target_class = targets[idx].item()
+        bias_indices = [bias_targets[idx].item() for bias_targets in bias_targets_list]
+
+        # Compute unique group ID
+        group_id = target_class
+        multiplier = num_classes
+        for bias_index, num_bias in zip(bias_indices, num_bias_categories):
+            group_id += bias_index * multiplier
+            multiplier *= num_bias
+
+        group_counts[group_id] += 1
+
+    # Calculate weights for each group
+    group_weights = len(imgs) / group_counts
+    weights = torch.zeros(len(imgs))
+
+    # Assign weights to samples
+    for idx in range(len(imgs)):
+        target_class = targets[idx].item()
+        bias_indices = [bias_targets[idx].item() for bias_targets in bias_targets_list]
+
+        # Compute unique group ID
+        group_id = target_class
+        multiplier = num_classes
+        for bias_index, num_bias in zip(bias_indices, num_bias_categories):
+            group_id += bias_index * multiplier
+            multiplier *= num_bias
+
+        weights[idx] = group_weights[group_id]
+    # print(weights)
+    return weights

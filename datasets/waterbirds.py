@@ -9,8 +9,9 @@ from PIL import Image
 from tqdm import tqdm
 import pandas as pd
 from torchvision import transforms
-from datasets.utils import download_waterbirds
+from datasets.utils import download_waterbirds, get_sampling_weights
 import shutil
+from torch.utils.data.sampler import WeightedRandomSampler
 
 data_split = {0: "train", 1: "val", 2: "test"}
 
@@ -112,13 +113,12 @@ class WaterbirdsDataset(Dataset):
             img = self.transform(img)
         if self.target_transform is not None:
             target = self.target_transform(target)
-        # return img, img_file_path, target, self.places[img_file_path.split("/")[-1]]
-        p = self.places[img_file_path.split("/")[-1]]
+        
         # print(f"target: {target}, background: {p}, index: {index}")
         return {"inputs": img, "targets": target, "background": self.places[img_file_path.split("/")[-1]], "index": index}
 
 
-def get_waterbirds(root_dir, batch_size=64, n_workers=4, transform=None) -> None:
+def get_waterbirds(root_dir, batch_size=64, n_workers=4, transform=None, split="train", sampler=None) -> None:
     scale = 256.0 / 224.0
     target_resolution = (224, 224)
     transform_test = transforms.Compose(
@@ -149,43 +149,55 @@ def get_waterbirds(root_dir, batch_size=64, n_workers=4, transform=None) -> None
                     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
                 ]
             )
-    train_dataset = WaterbirdsDataset(
+    if split == "train":
+        train_dataset = WaterbirdsDataset(
+                raw_data_path=root_dir,
+                root=root_dir,
+                split="train",
+                transform=transform_train,
+                return_places=True,
+            )
+        if sampler == "weighted": 
+            weights = get_sampling_weights(train_dataset.data_path, train_dataset.targets,*[torch.tensor([train_dataset.places[img_file_path.split("/")[-1]] for img_file_path in train_dataset.data_path])])
+            sampler = WeightedRandomSampler(weights, len(train_dataset), replacement=True)
+        else:
+            sampler = None
+        train_loader = torch.utils.data.DataLoader(
+                train_dataset,
+                batch_size=batch_size,
+                shuffle= True if sampler is None else False,
+                num_workers=n_workers,
+                sampler = sampler
+            )
+        return train_loader
+    elif split == "val":
+        val_dataset = WaterbirdsDataset(
+                raw_data_path=root_dir,
+                root=root_dir,
+                split="val",
+                transform=transform_test,
+            )
+        val_loader = torch.utils.data.DataLoader(
+                val_dataset,
+                batch_size=batch_size,
+                shuffle=False,
+                num_workers=n_workers,
+            )
+        return val_loader
+    elif split == "test":
+        test_dataset = WaterbirdsDataset(
             raw_data_path=root_dir,
             root=root_dir,
-            split="train",
-            transform=transform_train,
+            split="test",
+            transform=transform_test,
             return_places=True,
         )
-    train_loader = torch.utils.data.DataLoader(
-            train_dataset,
-            batch_size=batch_size,
-            shuffle=True,
-            num_workers=n_workers,
-        )
-    val_dataset = WaterbirdsDataset(
-            raw_data_path=root_dir,
-            root=root_dir,
-            split="val",
-            transform=transform_test,
-        )
-    val_loader = torch.utils.data.DataLoader(
-            val_dataset,
+        test_loader = torch.utils.data.DataLoader(
+            test_dataset,
             batch_size=batch_size,
             shuffle=False,
             num_workers=n_workers,
         )
-
-    test_dataset = WaterbirdsDataset(
-        raw_data_path=root_dir,
-        root=root_dir,
-        split="test",
-        transform=transform_test,
-        return_places=True,
-    )
-    test_loader = torch.utils.data.DataLoader(
-        test_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=n_workers,
-    )
-    return train_loader, val_loader, test_loader
+        return test_loader
+    else:
+        raise ValueError(f"split {split} not recognized")

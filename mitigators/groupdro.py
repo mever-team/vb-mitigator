@@ -1,109 +1,101 @@
-"""
-Copyright (c) Meta Platforms, Inc. and affiliates.
-All rights reserved.
-This source code is licensed under the license found in the
-LICENSE file in the root directory of this source tree.
-"""
-# --------------------------------------------------------
-# implementation from GroupDRO:
-# https://github.com/kohpangwei/group_DRO
-# --------------------------------------------------------
 
+import os
+from datasets.builder import get_dataset
+from tools.utils import load_checkpoint, log_msg, save_checkpoint
 import torch
 import torch.nn as nn
 
-
-from tqdm import tqdm
 from .base_trainer import BaseTrainer
-from utils import AverageMeter
-from torch.utils.data.sampler import WeightedRandomSampler
 
 
 class GroupDROTrainer(BaseTrainer):
-    def _setup_method_name_and_default_name(self):
-        args = self.args
-        args.method = "groupdro"
-        default_name = f"{args.method}_{args.group_label}_es_{args.early_stop_metric}_{args.dataset}"
-        self.default_name = default_name
-
-    def _get_train_loader(self, train_set):
-        args = self.args
-        weights = train_set.get_sampling_weights()
-        sampler = WeightedRandomSampler(weights, len(train_set), replacement=True)
-        train_loader = torch.utils.data.DataLoader(
-            train_set,
-            batch_size=args.batch_size,
-            shuffle=False,
-            num_workers=args.num_workers,
-            pin_memory=args.pin_memory,
-            sampler=sampler,
-            persistent_workers=args.num_workers > 0,
-        )
-        return train_loader
-
+   
     def _setup_criterion(self):
-        self.criterion = nn.CrossEntropyLoss(reduction="none")
+        if self.cfg.SOLVER.CRITERION == "CE":
+            self.criterion_train = nn.CrossEntropyLoss(reduction="none")
+            self.criterion = nn.CrossEntropyLoss()
+        else:
+            raise ValueError(f"Unsupported criterion type: {self.cfg.SOLVER.CRITERION}")
+
 
     def _method_specific_setups(self):
-        num_group = self.train_set.num_group
-        self.num_group = num_group
-        self.adv_probs = torch.ones(num_group, device=self.device) / num_group
+        self.adv_probs = torch.ones(self.num_group, device=self.device) / self.num_group
         self.group_range = torch.arange(
-            num_group, dtype=torch.long, device=self.device
+            self.num_group, dtype=torch.long, device=self.device
         ).unsqueeze(1)
+    
+    def _setup_dataset(self):
+        dataset = get_dataset(self.cfg)
+        self.num_class = dataset["num_class"]
+        self.biases = dataset["biases"]
+        self.dataloaders = dataset["dataloaders"]
+        self.data_root = dataset["root"]
+        self.target2name = dataset["target2name"]
+        self.ba_groups = dataset["ba_groups"] if "ba_groups" in dataset else None
+        self.num_group = dataset["num_groups"]
+        self.num_biases = self.num_group / self.num_class
+        return
 
-    def train(self):
-        args = self.args
-        self.classifier.train()
-        losses = AverageMeter("Loss", ":.4e")
 
-        pbar = tqdm(self.train_loader, dynamic_ncols=True)
-        for data_dict in pbar:
-            image, target = data_dict["image"], data_dict["label"]
-            group_index = data_dict["group_index"].to(self.device, non_blocking=True)
+    def _train_iter(self, batch):
+        inputs = batch["inputs"].to(self.device)
+        targets = batch["targets"].to(self.device)
 
-            obj_gt = target[:, 0]  # 0: obj, 1: bg, 2: co_occur_obj
-            image = image.to(self.device, non_blocking=True)
-            obj_gt = obj_gt.to(self.device, non_blocking=True)
+        biases = [batch[bias].to(self.device) for bias in self.biases]
+        group_index = targets * self.num_biases
+        for i, bias in enumerate(biases):
+            group_index += bias * (self.num_biases ** (i + 1))
 
-            with torch.cuda.amp.autocast(enabled=args.amp):
-                output = self.classifier(image)
-                loss_per_sample = self.criterion(output, obj_gt)
 
-                # compute group loss
-                group_map = (group_index == self.group_range).float()
-                group_count = group_map.sum(1)
-                group_denom = group_count + (group_count == 0).float()  # avoid nans
-                group_loss = (group_map @ loss_per_sample.flatten()) / group_denom
+        group_index = group_index.to(device=self.device, dtype=torch.long)
+        self.optimizer.zero_grad()
+        outputs = self.model(inputs)
+        if isinstance(outputs, tuple):
+            outputs, _ = outputs
+        loss_per_sample = self.criterion_train(outputs, targets)
+        # compute group loss
+        group_map = (group_index == self.group_range).float()
+        group_count = group_map.sum(1)
+        group_denom = group_count + (group_count == 0).float()  # avoid nans
+        group_loss = (group_map @ loss_per_sample.flatten()) / group_denom
 
-                # update adv_probs
-                with torch.no_grad():
-                    self.adv_probs = self.adv_probs * torch.exp(
-                        args.groupdro_robust_step_size * group_loss.detach()
-                    )
-                    self.adv_probs = self.adv_probs / (self.adv_probs.sum())
-
-                # compute reweighted robust loss
-                loss = group_loss @ self.adv_probs
-
-            self._loss_backward(loss)
-            self._optimizer_step(self.optimizer)
-            self._scaler_update()
-            self.optimizer.zero_grad(set_to_none=True)
-
-            losses.update(loss.item(), image.size(0))
-
-            pbar.set_description(
-                f"[{self.cur_epoch}/{args.epoch}] loss: {losses.avg:.4f}"
+        # update adv_probs
+        with torch.no_grad():
+            self.adv_probs = self.adv_probs * torch.exp(
+                self.cfg.MITIGATOR.GROUPDRO.ROBUST_STEP_SIZE * group_loss.detach()
             )
+            self.adv_probs = self.adv_probs / (self.adv_probs.sum())
 
-        self.log_to_wandb({"loss": losses.avg})
+        # compute reweighted robust loss
+        loss = group_loss @ self.adv_probs
+        self._loss_backward(loss)
+        self._optimizer_step()
+        return {"train_cls_loss": loss}
 
-    def _state_dict_for_save(self):
-        state_dict = super()._state_dict_for_save()
-        state_dict["adv_probs"] = self.adv_probs
-        return state_dict
 
-    def _load_state_dict(self, state_dict):
-        super()._load_state_dict(state_dict)
-        self.adv_probs = state_dict["adv_probs"]
+    def _save_checkpoint(self, tag):
+        state = {
+            "epoch": self.current_epoch,
+            "model": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "best_performance": self.best_performance,
+            "scheduler": self.scheduler.state_dict(),
+            "adv_probs": self.adv_probs,
+        }
+        save_checkpoint(state, os.path.join(self.log_path, tag))
+
+    def load_checkpoint(self, tag):
+        checkpoint = load_checkpoint(os.path.join(self.log_path, tag))
+        self.model.load_state_dict(checkpoint["model"])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        self.scheduler.load_state_dict(checkpoint["scheduler"])
+        self.best_performance = checkpoint["best_performance"]
+        self.current_epoch = checkpoint["epoch"]
+        self.adv_probs = checkpoint["adv_probs"]
+        print(
+            log_msg(
+                f"Loaded checkpoint from {os.path.join(self.log_path, tag)}",
+                "INFO",
+                self.logger,
+            )
+        )
