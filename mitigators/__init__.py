@@ -5,7 +5,7 @@ from .mavias import MAVIASTrainer
 from .groupdro import GroupDROTrainer
 from .debian import DebiANTrainer
 from .domain_independent import DomainIndependentTrainer
-
+from .spectral_decouple import SpectralDecoupleTrainer
 method_to_trainer = {
     "erm": ERMTrainer,
     "flac": FLACTrainer,
@@ -13,5 +13,6 @@ method_to_trainer = {
     "mavias": MAVIASTrainer,
     "groupdro": GroupDROTrainer,
     "debian": DebiANTrainer,
-    "di": DomainIndependentTrainer
+    "di": DomainIndependentTrainer,
+    "sd": SpectralDecoupleTrainer
 }
