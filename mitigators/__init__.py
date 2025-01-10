@@ -4,6 +4,7 @@ from .badd import BAddTrainer
 from .mavias import MAVIASTrainer
 from .groupdro import GroupDROTrainer
 from .debian import DebiANTrainer
+from .domain_independent import DomainIndependentTrainer
 
 method_to_trainer = {
     "erm": ERMTrainer,
@@ -11,5 +12,6 @@ method_to_trainer = {
     "badd": BAddTrainer,
     "mavias": MAVIASTrainer,
     "groupdro": GroupDROTrainer,
-    "debian": DebiANTrainer
+    "debian": DebiANTrainer,
+    "di": DomainIndependentTrainer
 }
