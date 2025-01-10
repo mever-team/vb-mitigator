@@ -1,228 +1,236 @@
-"""
-Copyright (c) Meta Platforms, Inc. and affiliates.
-All rights reserved.
-This source code is licensed under the license found in the
-LICENSE file in the root directory of this source tree.
-"""
-# --------------------------------------------------------
-# implementation from DebiAN:
-# https://github.com/zhihengli-UR/DebiAN
-# --------------------------------------------------------
-
+import os
+from datasets.builder import get_dataset
+from models.builder import get_model
+from tools.utils import load_checkpoint, log_msg, save_checkpoint
 import torch
-
-
-from tqdm import tqdm
 from .base_trainer import BaseTrainer
-from utils import AverageMeter
-from model.classifiers import get_classifier
-from utils import EPS
+from tools.metrics.utils import AverageMeter
+
+EPS = 1e-6
 
 
 class DebiANTrainer(BaseTrainer):
-    def _setup_method_name_and_default_name(self):
-        args = self.args
-        args.method = "debian"
 
-        default_name = f"{args.method}_es_{args.early_stop_metric}_{args.dataset}"
-        self.default_name = default_name
+    def _setup_dataset(self):
+        dataset = get_dataset(self.cfg)
+        self.num_class = dataset["num_class"]
+        self.biases = dataset["biases"]
+        self.dataloaders = dataset["dataloaders"]
+        self.data_root = dataset["root"]
+        self.target2name = dataset["target2name"]
+        self.ba_groups = dataset["ba_groups"] if "ba_groups" in dataset else None
+        dataset2 = get_dataset(self.cfg)
+        self.second_train_loader = dataset2["dataloaders"]["train"]
 
-    def _method_specific_setups(self):
-        self.second_train_loader = self._get_train_loader(self.train_set)
 
     def _setup_criterion(self):
-        self.criterion = torch.nn.CrossEntropyLoss(reduction="none")
+        super()._setup_criterion()
+        self.criterion_train = torch.nn.CrossEntropyLoss(reduction="none")
 
     def _setup_models(self):
         super()._setup_models()
-        args = self.args
-        self.bias_discover_net = get_classifier(
-            args.arch,
+        self.bias_discover_net = get_model(
+            self.cfg.MODEL.TYPE,
             self.num_class,
-        ).to(self.device)
+        )
+        self.bias_discover_net.to(self.device)
 
-    def _setup_optimizers(self):
-        super()._setup_optimizers()
-        args = self.args
-        if args.optimizer == "sgd":
+    def _setup_optimizer(self):
+        super()._setup_optimizer()
+        if self.cfg.SOLVER.TYPE == "SGD":
             self.optimizer_bias_discover_net = torch.optim.SGD(
                 self.bias_discover_net.parameters(),
-                args.lr,
-                momentum=args.momentum,
-                weight_decay=args.weight_decay,
+                lr=self.cfg.SOLVER.LR,
+                momentum=self.cfg.SOLVER.MOMENTUM,
+                weight_decay=self.cfg.SOLVER.WEIGHT_DECAY,
+            )
+        elif self.cfg.SOLVER.TYPE == "Adam":
+            self.optimizer_bias_discover_net = torch.optim.Adam(
+                self.bias_discover_net.parameters(),
+                lr=self.cfg.SOLVER.LR,
+                weight_decay=self.cfg.SOLVER.WEIGHT_DECAY,
             )
         else:
-            raise NotImplementedError
+            raise ValueError(f"Unsupported optimizer type: {self.cfg.SOLVER.TYPE}")
 
-    def _train_classifier(self, data_dict):
-        args = self.args
-        self.classifier.train()
+
+
+    def _train_iter(self, batch, batch2):
+
+        self.model.train()
         self.bias_discover_net.eval()
 
-        image, target = data_dict["image"], data_dict["label"]
-        obj_gt = target[:, 0]  # 0: obj, 1: bg, 2: co_occur_obj
+        inputs = batch["inputs"].to(self.device)
+        targets = batch["targets"].to(self.device)
 
-        image = image.to(self.device, non_blocking=True)
-        obj_gt = obj_gt.to(self.device, non_blocking=True)
 
         with torch.no_grad():
-            spurious_logits = self.bias_discover_net(image)
-        with torch.cuda.amp.autocast(enabled=args.amp):
-            target_logits = self.classifier(image)
+            spurious_logits = self.bias_discover_net(inputs)
+            if isinstance(spurious_logits, tuple):
+                spurious_logits, _ = spurious_logits
 
-            label = obj_gt.long()
-            label = label.reshape(target_logits.shape[0])
+        target_logits = self.model(inputs)
+        if isinstance(target_logits, tuple):
+            target_logits, _ = target_logits
 
-            p_vanilla = torch.softmax(target_logits, dim=1)
-            p_spurious = torch.sigmoid(spurious_logits)
+        label = targets.long()
+        label = label.reshape(target_logits.shape[0])
 
-            ce_loss = self.criterion(target_logits, label)
+        p_vanilla = torch.softmax(target_logits, dim=1)
+        p_spurious = torch.sigmoid(spurious_logits)
 
-            # reweight CE with DEO
-            for target_val in range(self.num_class):
-                batch_bool = label.long().flatten() == target_val
-                if not batch_bool.any():
-                    continue
-                p_vanilla_w_same_t_val = p_vanilla[batch_bool, target_val]
-                p_spurious_w_same_t_val = p_spurious[batch_bool, target_val]
+        ce_loss = self.criterion_train(target_logits, label)
 
-                positive_spurious_group_avg_p = (
-                    p_spurious_w_same_t_val * p_vanilla_w_same_t_val
-                ).sum() / (p_spurious_w_same_t_val.sum() + EPS)
-                negative_spurious_group_avg_p = (
-                    (1 - p_spurious_w_same_t_val) * p_vanilla_w_same_t_val
-                ).sum() / ((1 - p_spurious_w_same_t_val).sum() + EPS)
+        # reweight CE with DEO
+        for target_val in range(self.num_class):
+            batch_bool = label.long().flatten() == target_val
+            if not batch_bool.any():
+                continue
+            p_vanilla_w_same_t_val = p_vanilla[batch_bool, target_val]
+            p_spurious_w_same_t_val = p_spurious[batch_bool, target_val]
 
-                if (
-                    negative_spurious_group_avg_p
-                    < positive_spurious_group_avg_p
-                ):
-                    p_spurious_w_same_t_val = 1 - p_spurious_w_same_t_val
+            positive_spurious_group_avg_p = (
+                p_spurious_w_same_t_val * p_vanilla_w_same_t_val
+            ).sum() / (p_spurious_w_same_t_val.sum() + EPS)
+            negative_spurious_group_avg_p = (
+                (1 - p_spurious_w_same_t_val) * p_vanilla_w_same_t_val
+            ).sum() / ((1 - p_spurious_w_same_t_val).sum() + EPS)
 
-                weight = 1 + p_spurious_w_same_t_val
-                ce_loss[batch_bool] *= weight
+            if (
+                negative_spurious_group_avg_p
+                < positive_spurious_group_avg_p
+            ):
+                p_spurious_w_same_t_val = 1 - p_spurious_w_same_t_val
 
-            ce_loss = ce_loss.mean()
+            weight = 1 + p_spurious_w_same_t_val
+            ce_loss[batch_bool] *= weight
 
-        self._loss_backward(ce_loss)
-        self._optimizer_step(self.optimizer)
+        ce_loss = ce_loss.mean()
+
+        ce_loss.backward()
+        self.optimizer.step()
         self.optimizer.zero_grad(set_to_none=True)
 
-        return ce_loss.item()
+        ### bias discover net 
 
-    def _train_bias_discover_net(self, data_dict):
-        args = self.args
         self.bias_discover_net.train()
-        self.classifier.eval()
+        self.model.eval()
 
-        image, target = data_dict["image"], data_dict["label"]
-        obj_gt = target[:, 0]  # 0: obj, 1: bg, 2: co_occur_obj
-
-        image = image.to(self.device, non_blocking=True)
-        obj_gt = obj_gt.to(self.device, non_blocking=True)
+        inputs = batch2["inputs"].to(self.device)
+        targets = batch2["targets"].to(self.device)
 
         with torch.no_grad():
-            target_logits = self.classifier(image)
+            target_logits = self.model(inputs)
+            if isinstance(target_logits, tuple):
+                target_logits, _ = target_logits
 
-        with torch.cuda.amp.autocast(enabled=args.amp):
-            spurious_logits = self.bias_discover_net(image)
-            label = obj_gt.long()
-            label = label.reshape(target_logits.shape[0])
-            p_vanilla = torch.softmax(target_logits, dim=1)
-            p_spurious = torch.sigmoid(spurious_logits)
 
-            # ==== deo loss ======
-            sum_discover_net_deo_loss = 0
-            sum_penalty = 0
-            num_classes_in_batch = 0
-            for target_val in range(self.num_class):
-                batch_bool = label.long().flatten() == target_val
-                if not batch_bool.any():
-                    continue
-                p_vanilla_w_same_t_val = p_vanilla[batch_bool, target_val]
-                p_spurious_w_same_t_val = p_spurious[batch_bool, target_val]
+        spurious_logits = self.bias_discover_net(inputs)
+        if isinstance(spurious_logits, tuple):
+                spurious_logits, _ = spurious_logits
 
-                positive_spurious_group_avg_p = (
-                    p_spurious_w_same_t_val * p_vanilla_w_same_t_val
-                ).sum() / (p_spurious_w_same_t_val.sum() + EPS)
-                negative_spurious_group_avg_p = (
-                    (1 - p_spurious_w_same_t_val) * p_vanilla_w_same_t_val
-                ).sum() / ((1 - p_spurious_w_same_t_val).sum() + EPS)
+        label = targets.long()
+        label = label.reshape(target_logits.shape[0])
+        p_vanilla = torch.softmax(target_logits, dim=1)
+        p_spurious = torch.sigmoid(spurious_logits)
 
-                discover_net_deo_loss = -torch.log(
-                    EPS
-                    + torch.abs(
-                        positive_spurious_group_avg_p
-                        - negative_spurious_group_avg_p
-                    )
+        # ==== deo loss ======
+        sum_discover_net_deo_loss = 0
+        sum_penalty = 0
+        num_classes_in_batch = 0
+        for target_val in range(self.num_class):
+            batch_bool = label.long().flatten() == target_val
+            if not batch_bool.any():
+                continue
+            p_vanilla_w_same_t_val = p_vanilla[batch_bool, target_val]
+            p_spurious_w_same_t_val = p_spurious[batch_bool, target_val]
+
+            positive_spurious_group_avg_p = (
+                p_spurious_w_same_t_val * p_vanilla_w_same_t_val
+            ).sum() / (p_spurious_w_same_t_val.sum() + EPS)
+            negative_spurious_group_avg_p = (
+                (1 - p_spurious_w_same_t_val) * p_vanilla_w_same_t_val
+            ).sum() / ((1 - p_spurious_w_same_t_val).sum() + EPS)
+
+            discover_net_deo_loss = -torch.log(
+                EPS
+                + torch.abs(
+                    positive_spurious_group_avg_p
+                    - negative_spurious_group_avg_p
                 )
-
-                negative_p_spurious_w_same_t_val = 1 - p_spurious_w_same_t_val
-                penalty = -torch.log(
-                    EPS
-                    + 1
-                    - torch.abs(
-                        p_spurious_w_same_t_val.mean()
-                        - negative_p_spurious_w_same_t_val.mean()
-                    )
-                )
-
-                sum_discover_net_deo_loss += discover_net_deo_loss
-                sum_penalty += penalty
-                num_classes_in_batch += 1
-
-            sum_penalty /= num_classes_in_batch
-            sum_discover_net_deo_loss /= num_classes_in_batch
-            loss_discover = sum_discover_net_deo_loss + sum_penalty
-
-        self._loss_backward(loss_discover)
-        self._optimizer_step(self.optimizer_bias_discover_net)
-        self.optimizer_bias_discover_net.zero_grad(set_to_none=True)
-
-        return loss_discover.item()
-
-    def train(self):
-        args = self.args
-        cls_losses = AverageMeter("cls_loss", ":.4e")
-        dis_losses = AverageMeter("dis_loss", ":.4e")
-
-        pbar = tqdm(
-            zip(self.train_loader, self.second_train_loader),
-            dynamic_ncols=True,
-            total=len(self.train_loader),
-        )
-
-        for main_data_dict, second_data_dict in pbar:
-            cls_loss = self._train_classifier(main_data_dict)
-            dis_loss = self._train_bias_discover_net(second_data_dict)
-
-            cls_losses.update(cls_loss, main_data_dict["image"].size(0))
-            dis_losses.update(dis_loss, main_data_dict["image"].size(0))
-
-            self._scaler_update()
-
-            pbar.set_description(
-                f"[{self.cur_epoch}/{args.epoch}] cls_loss:"
-                f" {cls_losses.avg:.4f} dis_loss: {dis_losses.avg:.4f}"
             )
 
-        self.log_to_wandb(
-            {"cls_loss": cls_losses.avg, "dis_loss": dis_losses.avg}
-        )
+            negative_p_spurious_w_same_t_val = 1 - p_spurious_w_same_t_val
+            penalty = -torch.log(
+                EPS
+                + 1
+                - torch.abs(
+                    p_spurious_w_same_t_val.mean()
+                    - negative_p_spurious_w_same_t_val.mean()
+                )
+            )
 
-    def _state_dict_for_save(self):
-        state_dict = super()._state_dict_for_save()
-        state_dict.update(
-            {
-                "bias_discover_net": self.bias_discover_net.state_dict(),
-                "optimizer_bias_discover_net": self.optimizer_bias_discover_net.state_dict(),
-            }
-        )
-        return state_dict
+            sum_discover_net_deo_loss += discover_net_deo_loss
+            sum_penalty += penalty
+            num_classes_in_batch += 1
 
-    def _load_state_dict(self, state_dict):
-        super()._load_state_dict(state_dict)
-        self.bias_discover_net.load_state_dict(state_dict["bias_discover_net"])
+        sum_penalty /= num_classes_in_batch
+        sum_discover_net_deo_loss /= num_classes_in_batch
+        loss_discover = sum_discover_net_deo_loss + sum_penalty
+
+        loss_discover.backward()
+        self.optimizer_bias_discover_net.step()
+        self.optimizer_bias_discover_net.zero_grad(set_to_none=True)
+
+        return {"train_cls_loss": ce_loss, "train_bias_loss": loss_discover}
+    
+
+    def _train_epoch(self):
+        self._set_train()
+        self.current_lr = self.scheduler.get_last_lr()[0]
+        avg_loss = None
+        for batch, batch2 in zip(self.dataloaders["train"],self.second_train_loader):
+            bsz = batch["targets"].shape[0]
+            loss_dict = self._train_iter(batch, batch2)
+            # initialize if needed
+            if avg_loss is None:
+                avg_loss = {key: AverageMeter() for key in loss_dict.keys()}
+            # Update avg_loss for each key in loss_dict
+            for key, value in loss_dict.items():
+                avg_loss[key].update(value.item(), bsz)
+        self.scheduler.step()
+        avg_loss = {key: value.avg for key, value in avg_loss.items()}
+        return avg_loss
+
+
+
+    def _save_checkpoint(self, tag):
+        state = {
+            "epoch": self.current_epoch,
+            "model": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "best_performance": self.best_performance,
+            "scheduler": self.scheduler.state_dict(),
+            "bias_discover_net": self.bias_discover_net.state_dict(),
+            "optimizer_bias_discover_net": self.optimizer_bias_discover_net.state_dict(),
+        }
+        save_checkpoint(state, os.path.join(self.log_path, tag))
+
+    def load_checkpoint(self, tag):
+        checkpoint = load_checkpoint(os.path.join(self.log_path, tag))
+        self.model.load_state_dict(checkpoint["model"])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        self.scheduler.load_state_dict(checkpoint["scheduler"])
+        self.best_performance = checkpoint["best_performance"]
+        self.current_epoch = checkpoint["epoch"]
+        self.bias_discover_net.load_state_dict(checkpoint["bias_discover_net"])
         self.optimizer_bias_discover_net.load_state_dict(
-            state_dict["optimizer_bias_discover_net"]
+            checkpoint["optimizer_bias_discover_net"]
+        )
+        print(
+            log_msg(
+                f"Loaded checkpoint from {os.path.join(self.log_path, tag)}",
+                "INFO",
+                self.logger,
+            )
         )

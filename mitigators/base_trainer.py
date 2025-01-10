@@ -48,11 +48,8 @@ class BaseTrainer:
         self.dataloaders = dataset["dataloaders"]
         self.data_root = dataset["root"]
         self.target2name = dataset["target2name"]
-        # dataset["ba_groups"] exists, set self.ba_groups accordingly, else set to None
-        # print(dataset["ba_groups"])
         self.ba_groups = dataset["ba_groups"] if "ba_groups" in dataset else None
-        # print(self.ba_groups)
-        # self.batch_structure = dataset["batch_structure"]
+
         
 
     def _setup_optimizer(self):
