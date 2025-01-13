@@ -7,7 +7,7 @@ from __future__ import print_function
 
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
 
 class SupConLoss(nn.Module):
     """Supervised Contrastive Learning: https://arxiv.org/pdf/2004.11362.pdf.
@@ -103,5 +103,56 @@ class SupConLoss(nn.Module):
         # loss
         loss = -(self.temperature / self.base_temperature) * mean_log_prob_pos
         loss = loss.view(anchor_count, batch_size).mean()
+
+        return loss
+
+class EMAGPU:
+    def __init__(self, label, device, alpha=0.9):
+        self.label = label
+        self.alpha = alpha
+        self.device = device
+        self.parameter = torch.zeros(label.size(0), device=device)
+        self.updated = torch.zeros(label.size(0), device=device)
+        self.num_class = label.max().item() + 1
+        self.max_param_per_class = torch.zeros(self.num_class, device=device)
+
+    def update(self, data, index):
+        self.parameter[index] = (
+            self.alpha * self.parameter[index]
+            + (1 - self.alpha * self.updated[index]) * data
+        )
+        self.updated[index] = 1
+
+        # update max_param_per_class
+        batch_size = len(index)
+        buffer = torch.zeros(batch_size, self.num_class, device=self.device)
+        buffer[range(batch_size), self.label[index]] = self.parameter[index]
+        cur_max = buffer.max(dim=0).values
+        global_max = torch.maximum(cur_max, self.max_param_per_class)
+        label_set_indices = self.label[index].unique()
+        self.max_param_per_class[label_set_indices] = global_max[
+            label_set_indices
+        ]
+
+    def max_loss(self, label):
+        return self.max_param_per_class[label]
+    
+
+
+class GeneralizedCECriterion(nn.Module):
+    def __init__(self, q=0.7, reduction="none"):
+        super(GeneralizedCECriterion, self).__init__()
+        self.q = q
+        self.is_mean_loss = reduction == "mean"
+
+    def forward(self, logits, targets):
+        p = torch.softmax(logits, dim=1)
+        Yg = torch.gather(p, 1, torch.unsqueeze(targets, 1))
+        # modify gradient of cross entropy
+        loss_weight = (Yg.squeeze().detach() ** self.q) * self.q
+        loss = F.cross_entropy(logits, targets, reduction="none") * loss_weight
+
+        if self.is_mean_loss:
+            loss = torch.mean(loss)
 
         return loss

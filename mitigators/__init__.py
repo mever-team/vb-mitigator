@@ -6,6 +6,8 @@ from .groupdro import GroupDROTrainer
 from .debian import DebiANTrainer
 from .domain_independent import DomainIndependentTrainer
 from .spectral_decouple import SpectralDecoupleTrainer
+from .lff import LfFTrainer
+
 method_to_trainer = {
     "erm": ERMTrainer,
     "flac": FLACTrainer,
@@ -14,5 +16,6 @@ method_to_trainer = {
     "groupdro": GroupDROTrainer,
     "debian": DebiANTrainer,
     "di": DomainIndependentTrainer,
-    "sd": SpectralDecoupleTrainer
+    "sd": SpectralDecoupleTrainer,
+    "lff": LfFTrainer
 }

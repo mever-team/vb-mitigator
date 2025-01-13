@@ -1,0 +1,1 @@
+python tools/train.py --cfg configs/fb_biased_mnist/lff/dev.yaml
