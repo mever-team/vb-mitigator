@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class SupConLoss(nn.Module):
     """Supervised Contrastive Learning: https://arxiv.org/pdf/2004.11362.pdf.
     It also supports the unsupervised contrastive loss in SimCLR"""
@@ -87,7 +88,7 @@ class SupConLoss(nn.Module):
 
         # compute log_prob
         exp_logits = torch.exp(logits) * logits_mask
-        log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True)+ 1e-6) 
+        log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True) + 1e-6)
 
         # compute mean of log-likelihood over positive
         # modified to handle edge cases when there is no positive pair
@@ -105,6 +106,7 @@ class SupConLoss(nn.Module):
         loss = loss.view(anchor_count, batch_size).mean()
 
         return loss
+
 
 class EMAGPU:
     def __init__(self, label, device, alpha=0.9):
@@ -130,13 +132,10 @@ class EMAGPU:
         cur_max = buffer.max(dim=0).values
         global_max = torch.maximum(cur_max, self.max_param_per_class)
         label_set_indices = self.label[index].unique()
-        self.max_param_per_class[label_set_indices] = global_max[
-            label_set_indices
-        ]
+        self.max_param_per_class[label_set_indices] = global_max[label_set_indices]
 
     def max_loss(self, label):
         return self.max_param_per_class[label]
-    
 
 
 class GeneralizedCECriterion(nn.Module):
@@ -156,3 +155,17 @@ class GeneralizedCECriterion(nn.Module):
             loss = torch.mean(loss)
 
         return loss
+
+
+class BBLoss(nn.Module):
+    def __init__(self, confusion_matrix):
+        super().__init__()
+        self.confusion_matrix = confusion_matrix.cuda()
+        self.min_prob = 1e-9
+
+    def forward(self, logits, labels, biases):
+        prior = self.confusion_matrix[biases]
+        logits += torch.log(prior + self.min_prob)
+        label_loss = F.cross_entropy(logits, labels)
+
+        return label_loss

@@ -7,7 +7,7 @@ DATASET:
 MITIGATOR:
   TYPE: "erm"
 SOLVER:
-  BATCH_SIZE: 64
+  BATCH_SIZE: 128
   EPOCHS: 70
   LR: 0.001
   TYPE: "Adam"
@@ -17,3 +17,5 @@ SOLVER:
 MODEL:
   TYPE: "simple_conv"
 METRIC: "acc"
+LOG:
+  TRAIN_PERFORMANCE: True

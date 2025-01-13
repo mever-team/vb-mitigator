@@ -1,0 +1,1 @@
+python tools/train.py --cfg configs/utkface/bb/race.yaml

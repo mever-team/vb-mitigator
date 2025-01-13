@@ -770,3 +770,308 @@ val_loss: 5.54
 test_accuracy: 0.10
 test_loss: 5.50
 -------------------------
+2025-01-13 11:46:12,025 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 0
+    ROOT: ./data/biased_mnist
+  BIASES:
+  - color
+  - blonde
+  - makeup
+  - race
+  - age
+  - background
+  - foreground
+  FB_BIASED_MNIST:
+    CORR_BG: 0.9
+    CORR_FG: 0.9
+    RATIO: 0
+    ROOT: ./data/fb_biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+  UTKFACE:
+    BIAS: race
+    BIAS_ALIGNED:
+    - - 1
+      - 1
+    - - 0
+      - 0
+    IMAGE_SIZE: 64
+    RATIO: 0
+    ROOT: ./data/utkface
+  WATERBIRDS:
+    ROOT: ./data/waterbirds
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: true
+  WANDB: false
+MITIGATOR:
+  BADD:
+    M: 1.0
+  FLAC:
+    LOSS:
+      ALPHA: 110.0
+      CE_WEIGHT: 1.0
+      DELTA: 1.0
+  GROUPDRO:
+    ROBUST_STEP_SIZE: 0.01
+  MAVIAS:
+    ENCODER:
+      SIZE: 768
+      TYPE: clip
+    LLM:
+      BATCH_SIZE: 100
+      TYPE: llama3
+    LOSS:
+      ALPHA: 0.1
+      LAMBDA: 0.8
+    PROJNET:
+      OPTIM:
+        LR: 0.001
+        MOMENTUM: 0.9
+        TYPE: SGD
+        WEIGHT_DECAY: 0.0005
+    TAGGING_MODEL:
+      BATCH_SIZE: 32
+      IMG_SIZE: 384
+      TYPE: ram
+  SD:
+    COEF: 0.1
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 128
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+epoch           lr              train_cls_loss  train_accuracy  train_loss      val_accuracy    val_loss        test_accuracy   test_loss       
+------------------------------------------------------------------------------------------------------------------------------------------------
+0               0.001000        2.3060          10.8590         2.3066          10.9333         2.3097          9.6700          2.3172          
+1               0.001000        2.3049          10.7155         2.3045          11.1000         2.3056          10.0200         2.3184          
+2               0.001000        2.3046          10.8173         2.3030          10.3833         2.3036          14.6800         2.2979          
+3               0.001000        2.3038          11.0510         2.3048          11.1500         2.3042          12.0300         2.3069          
+4               0.001000        2.3039          11.2363         2.3033          11.4500         2.3042          11.3500         2.3009          
+2025-01-13 11:49:15,155 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 0
+    ROOT: ./data/biased_mnist
+  BIASES:
+  - color
+  - blonde
+  - makeup
+  - race
+  - age
+  - background
+  - foreground
+  FB_BIASED_MNIST:
+    CORR_BG: 0.9
+    CORR_FG: 0.9
+    RATIO: 0
+    ROOT: ./data/fb_biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+  UTKFACE:
+    BIAS: race
+    BIAS_ALIGNED:
+    - - 1
+      - 1
+    - - 0
+      - 0
+    IMAGE_SIZE: 64
+    RATIO: 0
+    ROOT: ./data/utkface
+  WATERBIRDS:
+    ROOT: ./data/waterbirds
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: true
+  WANDB: false
+MITIGATOR:
+  BADD:
+    M: 1.0
+  FLAC:
+    LOSS:
+      ALPHA: 110.0
+      CE_WEIGHT: 1.0
+      DELTA: 1.0
+  GROUPDRO:
+    ROBUST_STEP_SIZE: 0.01
+  MAVIAS:
+    ENCODER:
+      SIZE: 768
+      TYPE: clip
+    LLM:
+      BATCH_SIZE: 100
+      TYPE: llama3
+    LOSS:
+      ALPHA: 0.1
+      LAMBDA: 0.8
+    PROJNET:
+      OPTIM:
+        LR: 0.001
+        MOMENTUM: 0.9
+        TYPE: SGD
+        WEIGHT_DECAY: 0.0005
+    TAGGING_MODEL:
+      BATCH_SIZE: 32
+      IMG_SIZE: 384
+      TYPE: ram
+  SD:
+    COEF: 0.1
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 128
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+epoch           lr              train_cls_loss  train_accuracy  train_loss      val_accuracy    val_loss        test_accuracy   test_loss       
+------------------------------------------------------------------------------------------------------------------------------------------------
+0               0.001000        0.1150          98.9850         0.0749          10.3000         5.9110          10.2100         5.9048          
+1               0.001000        0.0757          99.0017         0.0786          12.5000         5.0151          11.9700         5.0177          
+2025-01-13 11:50:42,778 - INFO - CONFIG:
+DATASET:
+  BIASED_MNIST:
+    CORR: 0.99
+    RATIO: 0
+    ROOT: ./data/biased_mnist
+  BIASES:
+  - color
+  - blonde
+  - makeup
+  - race
+  - age
+  - background
+  - foreground
+  FB_BIASED_MNIST:
+    CORR_BG: 0.9
+    CORR_FG: 0.9
+    RATIO: 0
+    ROOT: ./data/fb_biased_mnist
+  NUM_WORKERS: 8
+  TEST:
+    BATCH_SIZE: 64
+  TYPE: biased_mnist
+  UTKFACE:
+    BIAS: race
+    BIAS_ALIGNED:
+    - - 1
+      - 1
+    - - 0
+      - 0
+    IMAGE_SIZE: 64
+    RATIO: 0
+    ROOT: ./data/utkface
+  WATERBIRDS:
+    ROOT: ./data/waterbirds
+EXPERIMENT:
+  GPU: cuda:0
+  NAME: erm
+  PROJECT: biased_mnist_baselines
+  SEED: 1
+  TAG: dev
+LOG:
+  PREFIX: ./output
+  SAVE_CHECKPOINT_FREQ: 40
+  SAVE_CRITERION: val
+  TENSORBOARD_FREQ: 500
+  TRAIN_PERFORMANCE: true
+  WANDB: false
+MITIGATOR:
+  BADD:
+    M: 1.0
+  FLAC:
+    LOSS:
+      ALPHA: 110.0
+      CE_WEIGHT: 1.0
+      DELTA: 1.0
+  GROUPDRO:
+    ROBUST_STEP_SIZE: 0.01
+  MAVIAS:
+    ENCODER:
+      SIZE: 768
+      TYPE: clip
+    LLM:
+      BATCH_SIZE: 100
+      TYPE: llama3
+    LOSS:
+      ALPHA: 0.1
+      LAMBDA: 0.8
+    PROJNET:
+      OPTIM:
+        LR: 0.001
+        MOMENTUM: 0.9
+        TYPE: SGD
+        WEIGHT_DECAY: 0.0005
+    TAGGING_MODEL:
+      BATCH_SIZE: 32
+      IMG_SIZE: 384
+      TYPE: ram
+  SD:
+    COEF: 0.1
+  TYPE: erm
+MODEL:
+  TYPE: simple_conv
+SOLVER:
+  BATCH_SIZE: 128
+  CRITERION: CE
+  EPOCHS: 70
+  LR: 0.001
+  MOMENTUM: 0.9
+  SCHEDULER:
+    LR_DECAY_RATE: 0.1
+    LR_DECAY_STAGES:
+    - 60
+    TYPE: MultiStepLR
+  TYPE: Adam
+  WEIGHT_DECAY: 0.0001
+
+epoch           lr              train_cls_loss  train_accuracy  train_loss      val_accuracy    val_loss        test_accuracy   test_loss       
+------------------------------------------------------------------------------------------------------------------------------------------------
+0               0.001000        0.1181          98.9917         0.0755          10.8167         5.7808          10.6500         5.7778          
