@@ -8,6 +8,7 @@ from .domain_independent import DomainIndependentTrainer
 from .spectral_decouple import SpectralDecoupleTrainer
 from .lff import LfFTrainer
 from .bb import BBTrainer
+from .end import EndTrainer
 
 method_to_trainer = {
     "erm": ERMTrainer,
@@ -19,5 +20,6 @@ method_to_trainer = {
     "di": DomainIndependentTrainer,
     "sd": SpectralDecoupleTrainer,
     "lff": LfFTrainer,
-    "bb": BBTrainer
+    "bb": BBTrainer,
+    "end": EndTrainer,
 }

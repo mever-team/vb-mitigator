@@ -1,0 +1,1 @@
+python tools/train.py --cfg configs/biased_mnist/end/dev.yaml
