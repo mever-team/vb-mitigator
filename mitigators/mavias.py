@@ -144,9 +144,7 @@ class MAVIASTrainer(BaseTrainer):
             calc_irrelevant_tags, axis=1
         )
         # save to csv
-        self.tags_df.to_csv(
-            os.path.join(self.data_root, "train_tags.csv"), index=False
-        )
+        self.tags_df.to_csv(os.path.join(self.data_root, "train_tags.csv"), index=False)
 
     def get_relevant_tags(self):
         llm_name = self.cfg.MITIGATOR.MAVIAS.LLM.TYPE
@@ -158,7 +156,7 @@ class MAVIASTrainer(BaseTrainer):
         unique_tags_df = pd.read_csv(
             os.path.join(self.data_root, "unique_tags_per_class.csv")
         )
-        
+
         unique_tags_df["tags"] = unique_tags_df["tags"].apply(ast.literal_eval)
 
         self.relevant_tags = {}
@@ -338,7 +336,7 @@ class MAVIASTrainer(BaseTrainer):
                         index=False,
                         header=False,
                     )
-            self.tags_df = tag_df
+            self.tags_df = pd.read_csv(os.path.join(outdir, "train_tags.csv"))
 
             # Convert sets to lists and save unique tags per class to CSV
             unique_tags_df = pd.DataFrame(

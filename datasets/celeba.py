@@ -100,7 +100,8 @@ class BiasedCelebASplit:
     def __getitem__(self, index):
         img, _ = self.celeba.__getitem__(self.indices[index])
         target, bias = self.targets[index], self.biases[index]
-        return img, target, bias, index
+        # return img, target, bias, index
+        return {"inputs": img, "targets": target, "gender": bias, "index": index}
 
     def __len__(self):
         return len(self.targets)
