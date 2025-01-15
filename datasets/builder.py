@@ -1,4 +1,5 @@
 from datasets.celeba import get_celeba
+from datasets.imagenet9 import get_background_challenge_data, get_imagenet9l
 from .biased_mnist import get_color_mnist
 from .fb_biased_mnist import get_color_mnist as get_fb_color_mnist
 from ram import get_transform
@@ -350,6 +351,65 @@ def get_dataset(cfg):
                 split="train",
                 target_attr=cfg.DATASET.CELEBA.TARGET,
                 ratio=cfg.DATASET.CELEBA.RATIO,
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+            dataset["dataloaders"]["tag_train"] = tag_train_loader
+    elif dataset_name == "imagenet9":
+        if method_name == "groupdro":
+            raise ValueError(
+                "GroupDro requires bias attribute annotations! The imagenet dataset does not offer such information. Please select another method, or modify imagenet class so that it incorporates your own bias annotations."
+            )
+        else:
+            train_loader = get_imagenet9l(
+                root=cfg.DATASET.IMAGENET9.ROOT_IMAGENET,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                image_size=cfg.DATASET.IMAGENET9.IMAGE_SIZE,
+            )
+
+        val_loader = get_background_challenge_data(
+            root=cfg.DATASET.IMAGENET9.ROOT_IMAGENET_BG,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.IMAGENET9.IMAGE_SIZE,
+            bench=cfg.DATASET.IMAGENET9.BENCHMARK_VAL,
+        )
+
+        test_loader = get_background_challenge_data(
+            root=cfg.DATASET.IMAGENET9.ROOT_IMAGENET_BG,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.IMAGENET9.IMAGE_SIZE,
+            bench=cfg.DATASET.IMAGENET9.BENCHMARK_TEST,
+        )
+
+        dataset = {}
+        dataset["num_class"] = 9
+        dataset["num_groups"] = 9
+        dataset["biases"] = [cfg.DATASET.IMAGENET9.BIAS]
+        dataset["dataloaders"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": test_loader,
+        }
+
+        dataset["target2name"] = {
+            0: "Dog",
+            1: "Bird",
+            2: "Vehicle",
+            3: "Reptile",
+            4: "Carnivore",
+            5: "Insect",
+            6: "Instrument",
+            7: "Primate",
+            8: "Fish",
+        }
+
+        dataset["root"] = cfg.DATASET.IMAGENET9.ROOT_IMAGENET_BG
+        if method_name == "mavias":
+            tag_train_loader = get_imagenet9l(
+                root=cfg.DATASET.IMAGENET9.ROOT_IMAGENET,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                image_size=cfg.DATASET.IMAGENET9.IMAGE_SIZE,
                 transform=get_transform(
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),

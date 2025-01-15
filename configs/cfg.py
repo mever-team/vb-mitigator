@@ -99,6 +99,14 @@ CFG.DATASET.CELEBA.RATIO = 0
 CFG.DATASET.CELEBA.IMAGE_SIZE = 224
 CFG.DATASET.CELEBA.BIAS_ALIGNED = [(0, 0), (1, 1)]
 
+CFG.DATASET.IMAGENET9 = CN()
+CFG.DATASET.IMAGENET9.ROOT_IMAGENET = "/nas3/cv-datasets/"
+CFG.DATASET.IMAGENET9.ROOT_IMAGENET_BG = "./data/imagenet9"
+CFG.DATASET.IMAGENET9.IMAGE_SIZE = 224
+CFG.DATASET.IMAGENET9.BIAS = "unknown"
+CFG.DATASET.IMAGENET9.BENCHMARK_VAL = "original"  # choices: mixed_rand, mixed_next, mixed_same, no_fg, only_bg_b, only_bg_t, only_fg, original
+CFG.DATASET.IMAGENET9.BENCHMARK_TEST = "mixed_rand"  # choices: mixed_rand, mixed_next, mixed_same, no_fg, only_bg_b, only_bg_t, only_fg, original
+
 # MITIGATOR
 CFG.MITIGATOR = CN()
 CFG.MITIGATOR.TYPE = "erm"  # Vanilla as default
