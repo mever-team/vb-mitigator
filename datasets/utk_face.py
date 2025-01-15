@@ -186,7 +186,6 @@ class BiasedUTKFace:
 
     def __len__(self):
         return len(self.files)
-    
 
 
 def get_utk_face(
@@ -202,7 +201,7 @@ def get_utk_face(
     ratio=0,
     given_y=True,
     transform=None,
-    sampler=None
+    sampler=None,
 ):
     logging.info(
         f"get_utk_face - split: {split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}"
@@ -223,7 +222,9 @@ def get_utk_face(
                         ),
                         transforms.RandomGrayscale(p=0.2),
                         transforms.ToTensor(),
-                        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                        transforms.Normalize(
+                            [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+                        ),
                     ]
                 )
             else:
@@ -279,8 +280,10 @@ def get_utk_face(
     #     sampler = None
     elif sampler is not None and split == "train":
         if sampler == "weighted":
-            #*[torch.tensor(bias) for bias in dataset.bias_targets]
-            weights = get_sampling_weights(dataset.files, dataset.targets,*[torch.tensor(dataset.bias_targets)])
+            # *[torch.tensor(bias) for bias in dataset.bias_targets]
+            weights = get_sampling_weights(
+                dataset.targets, *[torch.tensor(dataset.bias_targets)]
+            )
             sampler = WeightedRandomSampler(weights, len(dataset), replacement=True)
     else:
         sampler = None

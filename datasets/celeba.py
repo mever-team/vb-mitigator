@@ -4,13 +4,20 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from datasets.utils import TwoCropTransform, get_confusion_matrix
+from datasets.utils import (
+    TwoCropTransform,
+    download_celeba_anno,
+    download_celeba_zip,
+    get_confusion_matrix,
+    get_sampling_weights,
+)
 from torch.utils.data import WeightedRandomSampler
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as T
-from torchvision.datasets.celeba import CelebA
+
+# from .celeba_torch import CelebA
+from torchvision.datasets import CelebA
 import os
-from datasets.utils import download_celeba
 
 
 class BiasedCelebASplit:
@@ -20,7 +27,23 @@ class BiasedCelebASplit:
         if os.path.basename(os.path.normpath(root)) == "celeba":
             root = os.path.dirname(root)
         if not os.path.isdir(os.path.join(root, "celeba", "img_align_celeba")):
-            download_celeba(root)
+            download_celeba_zip(root)
+        files = [
+            "list_eval_partition.txt",
+            "list_landmarks_celeba.txt",
+            "list_attr_celeba.txt",
+            "list_bbox_celeba.txt",
+            "list_landmarks_align_celeba.txt",
+            "identity_CelebA.txt",
+        ]
+        flag = False
+        for file in files:
+            file_path = os.path.join(root, "celeba", file)
+            if not os.path.isfile(file_path):
+                flag = True
+                break
+        if flag:
+            download_celeba_anno(root)
         self.celeba = CelebA(
             root=root,
             # download=True,
@@ -42,6 +65,7 @@ class BiasedCelebASplit:
                     print(f"save blonde indices to {save_path}")
                     save_path.mkdir(parents=True, exist_ok=True)
                     pickle.dump(self.indices, open(save_path / f"indices.pkl", "wb"))
+                print(len(self.indices), len(self.celeba.attr))
                 self.attr = self.celeba.attr[self.indices]
             else:
                 self.attr = self.celeba.attr
@@ -118,6 +142,8 @@ def get_celeba(
     ratio=0,
     img_size=224,
     given_y=True,
+    transform=None,
+    sampler=None,
 ):
     logging.info(
         f"get_celeba - split:{split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}"
@@ -131,27 +157,28 @@ def get_celeba(
             ]
         )
     else:
-        if aug:
-            transform = T.Compose(
-                [
-                    T.RandomResizedCrop(size=img_size, scale=(0.2, 1.0)),
-                    T.RandomHorizontalFlip(),
-                    T.RandomApply([T.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
-                    T.RandomGrayscale(p=0.2),
-                    T.ToTensor(),
-                    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                ]
-            )
+        if transform is None:
+            if aug:
+                transform = T.Compose(
+                    [
+                        T.RandomResizedCrop(size=img_size, scale=(0.2, 1.0)),
+                        T.RandomHorizontalFlip(),
+                        T.RandomApply([T.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
+                        T.RandomGrayscale(p=0.2),
+                        T.ToTensor(),
+                        T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                    ]
+                )
 
-        else:
-            transform = T.Compose(
-                [
-                    T.Resize((img_size, img_size)),
-                    T.RandomHorizontalFlip(),
-                    T.ToTensor(),
-                    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                ]
-            )
+            else:
+                transform = T.Compose(
+                    [
+                        T.Resize((img_size, img_size)),
+                        T.RandomHorizontalFlip(),
+                        T.ToTensor(),
+                        T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                    ]
+                )
 
     if two_crop:
         transform = TwoCropTransform(transform)
@@ -181,6 +208,15 @@ def get_celeba(
         if ratio > 0:
             weights = clip_max_ratio(np.array(weights))
         sampler = WeightedRandomSampler(weights, len(weights), replacement=True)
+    # else:
+    #     sampler = None
+    elif sampler is not None and split == "train":
+        if sampler == "weighted":
+            # *[torch.tensor(bias) for bias in dataset.bias_targets]
+            weights = get_sampling_weights(
+                dataset.targets, *[torch.tensor(dataset.biases)]
+            )
+            sampler = WeightedRandomSampler(weights, len(dataset), replacement=True)
     else:
         sampler = None
 

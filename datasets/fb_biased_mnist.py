@@ -574,7 +574,13 @@ def get_color_mnist(
             )
         elif sampler is not None and split == "train":
             if sampler == "weighted":
-                weights = get_sampling_weights(dataset.data, dataset.targets, *[torch.tensor(bias) for bias in [dataset.biased_targets, dataset.biased_targets2]])
+                weights = get_sampling_weights(
+                    dataset.targets,
+                    *[
+                        torch.tensor(bias)
+                        for bias in [dataset.biased_targets, dataset.biased_targets2]
+                    ],
+                )
                 sampler = WeightedRandomSampler(weights, len(dataset), replacement=True)
             else:
                 sampler = None

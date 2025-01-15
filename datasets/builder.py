@@ -1,9 +1,11 @@
+from datasets.celeba import get_celeba
 from .biased_mnist import get_color_mnist
 from .fb_biased_mnist import get_color_mnist as get_fb_color_mnist
 from ram import get_transform
 from .custom_transforms import get_transform as get_transform_padded
 from .utk_face import get_utk_face
 from .waterbirds import get_waterbirds
+
 
 def get_dataset(cfg):
     dataset_name = cfg.DATASET.TYPE
@@ -12,15 +14,15 @@ def get_dataset(cfg):
     if dataset_name == "biased_mnist":
         if method_name == "groupdro":
             train_loader = get_color_mnist(
-            cfg.DATASET.BIASED_MNIST.ROOT,
-            batch_size=cfg.SOLVER.BATCH_SIZE,
-            data_label_correlation=cfg.DATASET.BIASED_MNIST.CORR,
-            n_confusing_labels=9,
-            split="train",
-            seed=cfg.EXPERIMENT.SEED,
-            aug=False,
-            sampler="weighted",
-        )
+                cfg.DATASET.BIASED_MNIST.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                data_label_correlation=cfg.DATASET.BIASED_MNIST.CORR,
+                n_confusing_labels=9,
+                split="train",
+                seed=cfg.EXPERIMENT.SEED,
+                aug=False,
+                sampler="weighted",
+            )
         else:
             train_loader = get_color_mnist(
                 cfg.DATASET.BIASED_MNIST.ROOT,
@@ -86,8 +88,6 @@ def get_dataset(cfg):
                 ),
             )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
-        
-
 
     elif dataset_name == "fb_biased_mnist":
         if method_name == "groupdro":
@@ -104,15 +104,15 @@ def get_dataset(cfg):
             )
         else:
             train_loader = get_fb_color_mnist(
-            cfg.DATASET.FB_BIASED_MNIST.ROOT,
-            batch_size=cfg.SOLVER.BATCH_SIZE,
-            data_label_correlation1=cfg.DATASET.FB_BIASED_MNIST.CORR_BG,
-            data_label_correlation2=cfg.DATASET.FB_BIASED_MNIST.CORR_FG,
-            n_confusing_labels=9,
-            split="train",
-            seed=cfg.EXPERIMENT.SEED,
-            aug=False,
-        )
+                cfg.DATASET.FB_BIASED_MNIST.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                data_label_correlation1=cfg.DATASET.FB_BIASED_MNIST.CORR_BG,
+                data_label_correlation2=cfg.DATASET.FB_BIASED_MNIST.CORR_FG,
+                n_confusing_labels=9,
+                split="train",
+                seed=cfg.EXPERIMENT.SEED,
+                aug=False,
+            )
 
         val_loader = get_fb_color_mnist(
             cfg.DATASET.FB_BIASED_MNIST.ROOT,
@@ -175,23 +175,23 @@ def get_dataset(cfg):
     elif dataset_name == "utkface":
         if method_name == "groupdro":
             train_loader = get_utk_face(
-            cfg.DATASET.UTKFACE.ROOT,
-            batch_size=cfg.SOLVER.BATCH_SIZE,
-            split="train",
-            bias_attr=cfg.DATASET.UTKFACE.BIAS,
-            image_size=cfg.DATASET.UTKFACE.IMAGE_SIZE,
-            ratio=cfg.DATASET.UTKFACE.RATIO,
-            sampler = "weighted"
-        )
+                cfg.DATASET.UTKFACE.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                split="train",
+                bias_attr=cfg.DATASET.UTKFACE.BIAS,
+                image_size=cfg.DATASET.UTKFACE.IMAGE_SIZE,
+                ratio=cfg.DATASET.UTKFACE.RATIO,
+                sampler="weighted",
+            )
         else:
             train_loader = get_utk_face(
-            cfg.DATASET.UTKFACE.ROOT,
-            batch_size=cfg.SOLVER.BATCH_SIZE,
-            split="train",
-            bias_attr=cfg.DATASET.UTKFACE.BIAS,
-            image_size=cfg.DATASET.UTKFACE.IMAGE_SIZE,
-            ratio=cfg.DATASET.UTKFACE.RATIO,
-        )
+                cfg.DATASET.UTKFACE.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                split="train",
+                bias_attr=cfg.DATASET.UTKFACE.BIAS,
+                image_size=cfg.DATASET.UTKFACE.IMAGE_SIZE,
+                ratio=cfg.DATASET.UTKFACE.RATIO,
+            )
 
         val_loader = get_utk_face(
             cfg.DATASET.UTKFACE.ROOT,
@@ -218,33 +218,51 @@ def get_dataset(cfg):
             "val": val_loader,
             "test": test_loader,
         }
-        dataset["target2name"] = {
-            0: "male",
-            1: "female"
-        }
+        dataset["target2name"] = {0: "male", 1: "female"}
         dataset["root"] = cfg.DATASET.UTKFACE.ROOT
         dataset["ba_groups"] = cfg.DATASET.UTKFACE.BIAS_ALIGNED
         # print(dataset["ba_groups"])
         if method_name == "mavias":
             tag_train_loader = get_utk_face(
-            cfg.DATASET.UTKFACE.ROOT,
-            batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
-            split="train",
-            bias_attr=cfg.DATASET.UTKFACE.BIAS,
-            ratio=cfg.DATASET.UTKFACE.RATIO,
-            transform=get_transform(
+                cfg.DATASET.UTKFACE.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                split="train",
+                bias_attr=cfg.DATASET.UTKFACE.BIAS,
+                ratio=cfg.DATASET.UTKFACE.RATIO,
+                transform=get_transform(
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),
             )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
     elif dataset_name == "waterbirds":
         if method_name == "groupdro":
-            train_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS,split="train", sampler="weighted")
+            train_loader = get_waterbirds(
+                cfg.DATASET.WATERBIRDS.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                n_workers=cfg.DATASET.NUM_WORKERS,
+                split="train",
+                sampler="weighted",
+            )
         else:
-            train_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS,split="train")
+            train_loader = get_waterbirds(
+                cfg.DATASET.WATERBIRDS.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                n_workers=cfg.DATASET.NUM_WORKERS,
+                split="train",
+            )
 
-        val_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS,split="val")
-        test_loader = get_waterbirds(cfg.DATASET.WATERBIRDS.ROOT, batch_size=cfg.SOLVER.BATCH_SIZE, n_workers=cfg.DATASET.NUM_WORKERS,split="test")
+        val_loader = get_waterbirds(
+            cfg.DATASET.WATERBIRDS.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            n_workers=cfg.DATASET.NUM_WORKERS,
+            split="val",
+        )
+        test_loader = get_waterbirds(
+            cfg.DATASET.WATERBIRDS.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            n_workers=cfg.DATASET.NUM_WORKERS,
+            split="test",
+        )
 
         dataset = {}
         dataset["num_class"] = 2
@@ -261,10 +279,77 @@ def get_dataset(cfg):
             1: "bird",
         }
         if method_name == "mavias":
-            tag_train_loader,_,_ = get_waterbirds(
+            tag_train_loader, _, _ = get_waterbirds(
                 cfg.DATASET.WATERBIRDS.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
                 n_workers=cfg.DATASET.NUM_WORKERS,
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+            dataset["dataloaders"]["tag_train"] = tag_train_loader
+    elif dataset_name == "celeba":
+        if method_name == "groupdro":
+            train_loader = get_celeba(
+                cfg.DATASET.CELEBA.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                split="train",
+                target_attr=cfg.DATASET.CELEBA.TARGET,
+                img_size=cfg.DATASET.CELEBA.IMAGE_SIZE,
+                ratio=cfg.DATASET.CELEBA.RATIO,
+                sampler="weighted",
+            )
+        else:
+            train_loader = get_celeba(
+                cfg.DATASET.CELEBA.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                split="train",
+                target_attr=cfg.DATASET.CELEBA.TARGET,
+                img_size=cfg.DATASET.CELEBA.IMAGE_SIZE,
+                ratio=cfg.DATASET.CELEBA.RATIO,
+            )
+
+        val_loader = get_celeba(
+            cfg.DATASET.CELEBA.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            split="valid",
+            target_attr=cfg.DATASET.CELEBA.TARGET,
+            img_size=cfg.DATASET.CELEBA.IMAGE_SIZE,
+        )
+
+        test_loader = get_celeba(
+            cfg.DATASET.CELEBA.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            split="test",
+            target_attr=cfg.DATASET.CELEBA.TARGET,
+            img_size=cfg.DATASET.CELEBA.IMAGE_SIZE,
+        )
+
+        dataset = {}
+        dataset["num_class"] = 2
+        dataset["num_groups"] = 2 * 2
+        dataset["biases"] = [cfg.DATASET.CELEBA.BIAS]
+        dataset["dataloaders"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": test_loader,
+        }
+        if cfg.DATASET.CELEBA.TARGET == "blonde":
+            dataset["target2name"] = {0: "non blonde", 1: "blonde"}
+        elif cfg.DATASET.CELEBA.TARGET == "makeup":
+            dataset["target2name"] = {0: "no makeup", 1: "makeup"}
+        else:
+            raise ValueError("Target attribute should be either blonde or makeup.")
+        dataset["root"] = cfg.DATASET.CELEBA.ROOT
+        dataset["ba_groups"] = cfg.DATASET.CELEBA.BIAS_ALIGNED
+        # print(dataset["ba_groups"])
+        if method_name == "mavias":
+            tag_train_loader = get_celeba(
+                cfg.DATASET.CELEBA.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                split="train",
+                target_attr=cfg.DATASET.CELEBA.TARGET,
+                ratio=cfg.DATASET.CELEBA.RATIO,
                 transform=get_transform(
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),

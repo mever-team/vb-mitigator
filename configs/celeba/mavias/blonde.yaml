@@ -1,0 +1,23 @@
+EXPERIMENT:
+  NAME: "mavias"
+  TAG: "blonde"
+  PROJECT: "celeba_baselines"
+DATASET:
+  TYPE: "celeba"
+  BIASES: ["gender"]
+  CELEBA:
+    BIAS: "gender"
+    TARGET: "blonde"
+MITIGATOR:
+  TYPE: "mavias"
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 20
+  LR: 0.001
+  TYPE: "Adam"
+  SCHEDULER:
+    LR_DECAY_STAGES: [60]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet18"
+METRIC: "unb_bc_ba"

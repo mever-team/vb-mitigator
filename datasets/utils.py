@@ -52,73 +52,153 @@ def get_unsup_confusion_matrix(num_classes, targets, biases, marginals):
     return confusion_matrix_org, confusion_matrix
 
 
-def download_celeba(root):
-    """
-    Downloads the CelebA dataset and extracts it to the directory `root/celeba`.
+# def download_celeba(root):
+#     """
+#     Downloads the CelebA dataset and extracts it to the directory `root/celeba`.
 
-    Args:
-        root (str): Root directory where the CelebA dataset will be extracted.
+#     Args:
+#         root (str): Root directory where the CelebA dataset will be extracted.
 
-    Raises:
-        Exception: If the download or extraction fails.
-    """
-    # Define URLs and paths
-    dataset_url = (
-        "https://www.kaggle.com/api/v1/datasets/download/jessicali9530/celeba-dataset"
-    )
-    download_path = os.path.join(root, "celeba.zip")
+#     Raises:
+#         Exception: If the download or extraction fails.
+#     """
+#     # Define URLs and paths
+#     dataset_url = (
+#         "https://www.kaggle.com/api/v1/datasets/download/jessicali9530/celeba-dataset"
+#     )
+#     download_path = os.path.join(root, "celeba.zip")
+#     extract_path = root
+
+#     # Ensure the root directory exists
+#     os.makedirs(root, exist_ok=True)
+
+#     try:
+#         # Download the dataset with a progress bar
+#         print("Downloading CelebA dataset...")
+#         response = requests.get(dataset_url, stream=True)
+#         response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
+
+#         # Get the total size from headers
+#         total_size = int(response.headers.get("content-length", 0))
+#         chunk_size = 1024
+#         num_chunks = total_size // chunk_size + 1
+
+#         # Write the dataset to a file with a progress bar
+#         with open(download_path, "wb") as file, tqdm(
+#             desc="Downloading",
+#             unit="KB",
+#             unit_divisor=1024,
+#         ) as pbar:
+#             for chunk in response.iter_content(chunk_size=chunk_size):
+#                 if chunk:
+#                     file.write(chunk)
+#                     pbar.update(len(chunk))
+#         print(f"Downloaded CelebA dataset to {download_path}.")
+
+#         # Extract the dataset
+#         print(f"Extracting CelebA dataset to {extract_path}...")
+#         with zipfile.ZipFile(download_path, "r") as zip_ref:
+#             zip_ref.extractall(extract_path)
+
+#         extracted_dir = os.path.join(extract_path, "img_align_celeba")
+#         final_path = os.path.join(root, "celeba")
+#         if os.path.exists(extracted_dir):
+#             os.rename(extracted_dir, final_path)
+#         print(f"Extraction complete. Dataset available at {final_path}.")
+
+#         # Optionally delete the zip file
+#         os.remove(download_path)
+#         print(f"Deleted the downloaded zip file: {download_path}.")
+
+#         # move the extracted files: list_attr_celeba.csv, list_bbox_celeba.csv, list_eval_partition.csv, and list_landmarks_align_celeba.csv to final path
+#         extracted_files = [
+#             "list_attr_celeba.csv",
+#             "list_bbox_celeba.csv",
+#             "list_eval_partition.csv",
+#             "list_landmarks_align_celeba.csv",
+#         ]
+#         for file_name in extracted_files:
+#             extracted_file_path = os.path.join(extract_path, file_name)
+#             final_file_path = os.path.join(
+#                 root, "celeba", file_name.replace(".csv", ".txt")
+#             )
+#             if os.path.exists(extracted_file_path):
+#                 os.makedirs(os.path.dirname(final_file_path), exist_ok=True)
+#                 os.rename(extracted_file_path, final_file_path)
+#         print(f"Moved and renamed extracted files to {os.path.join(root, 'celeba')}.")
+#     except requests.exceptions.RequestException as e:
+#         print(f"Failed to download the dataset: {e}")
+#         raise
+#     except zipfile.BadZipFile as e:
+#         print(f"Failed to extract the dataset: {e}")
+#         raise
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
+#         raise
+
+
+def download_celeba_zip(root):
+
     extract_path = root
-
-    # Ensure the root directory exists
+    download_path = os.path.join(root, "celeba.zip")
+    data_url = "https://drive.google.com/uc?id=0B7EVK8r0v71pZjFTYXZWM3FlRnM"
+    # Ensure the directory exists
     os.makedirs(root, exist_ok=True)
-
     try:
-        # Download the dataset with a progress bar
-        print("Downloading CelebA dataset...")
-        response = requests.get(dataset_url, stream=True)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
-
-        # Get the total size from headers
-        total_size = int(response.headers.get("content-length", 0))
-        chunk_size = 1024
-        num_chunks = total_size // chunk_size + 1
-
-        # Write the dataset to a file with a progress bar
-        with open(download_path, "wb") as file, tqdm(
-            desc="Downloading",
-            unit="KB",
-            unit_divisor=1024,
-        ) as pbar:
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                if chunk:
-                    file.write(chunk)
-                    pbar.update(len(chunk))
-        print(f"Downloaded CelebA dataset to {download_path}.")
+        # Download the data file from Google Drive
+        gdown.download(data_url, download_path, quiet=False)
+        print(f"Downloaded data to {download_path}.")
 
         # Extract the dataset
-        print(f"Extracting CelebA dataset to {extract_path}...")
+        print(f"Extracting CelebA dataset images to {extract_path}...")
         with zipfile.ZipFile(download_path, "r") as zip_ref:
             zip_ref.extractall(extract_path)
 
-        extracted_dir = os.path.join(extract_path, "img_align_celeba")
-        final_path = os.path.join(root, "celeba")
-        if os.path.exists(extracted_dir):
-            os.rename(extracted_dir, final_path)
-        print(f"Extraction complete. Dataset available at {final_path}.")
+        # extracted_dir = os.path.join(extract_path, "img_align_celeba")
+        # final_path = os.path.join(root, "celeba")
+        # if os.path.exists(extracted_dir):
+        #     os.rename(extracted_dir, final_path)
+        # print(f"Extraction complete. Dataset available at {final_path}.")
 
         # Optionally delete the zip file
         os.remove(download_path)
         print(f"Deleted the downloaded zip file: {download_path}.")
-
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to download the dataset: {e}")
-        raise
     except zipfile.BadZipFile as e:
         print(f"Failed to extract the dataset: {e}")
         raise
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         raise
+
+
+def download_celeba_anno(root):
+
+    extract_path = root
+    files = {
+        "list_eval_partition.txt": "0B7EVK8r0v71pY0NSMzRuSXJEVkk",
+        "list_landmarks_celeba.txt": "0B7EVK8r0v71pTzJIdlJWdHczRlU",
+        "list_attr_celeba.txt": "0B7EVK8r0v71pblRyaVFSWGxPY0U",
+        "list_bbox_celeba.txt": "0B7EVK8r0v71pbThiMVRxWXZ4dU0",
+        "list_landmarks_align_celeba.txt": "0B7EVK8r0v71pd0FJY3Blby1HUTQ",
+        "identity_CelebA.txt": "1_ee_0u7vcNLOfNLegJRHmolfH5ICW-XS",
+    }
+    for file, uid in files.items():
+        download_path = os.path.join(root, "celeba", file)
+        data_url = f"https://drive.google.com/uc?id={uid}"
+        # Ensure the directory exists
+        os.makedirs(os.path.join(root, "celeba"), exist_ok=True)
+
+        try:
+            # Download the data file from Google Drive
+            gdown.download(data_url, download_path, quiet=False)
+            print(f"Downloaded data to {download_path}.")
+
+        except zipfile.BadZipFile as e:
+            print(f"Failed to extract the dataset: {e}")
+            raise
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            raise
 
 
 def download_utkface(root):
@@ -273,7 +353,6 @@ def download_imagenet9(root):
         raise
 
 
-
 def get_subsample_group_indices(imgs, targets, bias_targets, bias_rate):
     """
     Returns subsampled group indices based on the bias attribute and bias rate.
@@ -305,12 +384,12 @@ def get_subsample_group_indices(imgs, targets, bias_targets, bias_rate):
 
     return indices
 
-def get_sampling_weights(imgs, targets, *bias_targets_list):
+
+def get_sampling_weights(targets, *bias_targets_list):
     """
     Calculates and returns sampling weights for each sample, generalized for multiple biases.
 
     Args:
-        imgs (Tensor): Dataset images or data points (used only for length).
         targets (Tensor): Target class labels.
         *bias_targets_list: Arbitrary number of bias attribute label Tensors.
 
@@ -321,8 +400,10 @@ def get_sampling_weights(imgs, targets, *bias_targets_list):
         targets = torch.tensor(targets)
 
     num_classes = targets.max().item() + 1
-    
-    num_bias_categories = [bias_targets.max().item() + 1 for bias_targets in bias_targets_list]
+
+    num_bias_categories = [
+        bias_targets.max().item() + 1 for bias_targets in bias_targets_list
+    ]
 
     # Calculate total number of groups
     num_groups = num_classes * torch.prod(torch.tensor(num_bias_categories))
@@ -331,7 +412,7 @@ def get_sampling_weights(imgs, targets, *bias_targets_list):
     group_counts = torch.zeros(num_groups)
 
     # Count samples per group
-    for idx in range(len(imgs)):
+    for idx in range(len(targets)):
         target_class = targets[idx].item()
         bias_indices = [bias_targets[idx].item() for bias_targets in bias_targets_list]
 
@@ -345,11 +426,11 @@ def get_sampling_weights(imgs, targets, *bias_targets_list):
         group_counts[group_id] += 1
 
     # Calculate weights for each group
-    group_weights = len(imgs) / group_counts
-    weights = torch.zeros(len(imgs))
+    group_weights = len(targets) / group_counts
+    weights = torch.zeros(len(targets))
 
     # Assign weights to samples
-    for idx in range(len(imgs)):
+    for idx in range(len(targets)):
         target_class = targets[idx].item()
         bias_indices = [bias_targets[idx].item() for bias_targets in bias_targets_list]
 

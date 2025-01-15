@@ -2,6 +2,7 @@ from models import models_dict
 from .utils import get_model_dict
 from models.resnet import set_resnet_fc
 
+
 def get_model(model_name, num_class):
     model = models_dict[model_name](num_class)
     return model
@@ -32,6 +33,10 @@ def get_bcc(cfg, num_class):
         elif (dataset_name == "waterbirds") and (bias_name == "background"):
             model = set_resnet_fc(models_dict["resnet50_def"](), num_class)
             model.load_state_dict(model_dict)
+            models[bias_name] = model
+        elif dataset_name == "celeba" and (bias_name == "gender"):
+            model = models_dict["resnet18"](num_class)
+            model.load_state_dict(model_dict["model"])
             models[bias_name] = model
         else:
             raise ValueError(

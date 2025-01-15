@@ -21,8 +21,9 @@ from datasets.utils import (
 from torch.utils import data
 from torchvision import transforms
 from torchvision.datasets import MNIST
-from datasets.utils import  get_sampling_weights
+from datasets.utils import get_sampling_weights
 from torch.utils.data.sampler import WeightedRandomSampler
+
 
 class BiasedMNIST(MNIST):
     """A base class for Biased-MNIST.
@@ -319,7 +320,7 @@ def get_color_mnist(
     given_y=True,
     train_corr=None,
     transform=None,
-    sampler = None,
+    sampler=None,
 ):
     # logging.info(
     #     f"get_color_mnist - split: {split}, aug: {aug}, given_y: {given_y}, ratio: {ratio}"
@@ -439,11 +440,12 @@ def get_color_mnist(
             )
         elif sampler is not None and split == "train":
             if sampler == "weighted":
-                weights = get_sampling_weights(dataset.data, dataset.targets, *[torch.tensor(dataset.biased_targets)])
+                weights = get_sampling_weights(
+                    dataset.targets, *[torch.tensor(dataset.biased_targets)]
+                )
                 sampler = WeightedRandomSampler(weights, len(dataset), replacement=True)
             else:
                 sampler = None
-        
 
         dataloader = data.DataLoader(
             dataset=dataset,
