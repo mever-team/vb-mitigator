@@ -154,11 +154,11 @@ def download_celeba_zip(root):
         with zipfile.ZipFile(download_path, "r") as zip_ref:
             zip_ref.extractall(extract_path)
 
-        # extracted_dir = os.path.join(extract_path, "img_align_celeba")
-        # final_path = os.path.join(root, "celeba")
-        # if os.path.exists(extracted_dir):
-        #     os.rename(extracted_dir, final_path)
-        # print(f"Extraction complete. Dataset available at {final_path}.")
+        extracted_dir = os.path.join(extract_path, "img_align_celeba")
+        final_path = os.path.join(root, "celeba")
+        if os.path.exists(extracted_dir):
+            os.rename(extracted_dir, final_path)
+        print(f"Extraction complete. Dataset available at {final_path}.")
 
         # Optionally delete the zip file
         os.remove(download_path)
