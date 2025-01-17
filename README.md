@@ -1,4 +1,4 @@
-<div align=center><img src="assets/vb-mitigator logo_250.png" width="40%" ><div align=left>
+<div align=center><img src="assets/vb-mitigator logo_250.png" width="20%" ><div align=left>
 
 # Visual Bias Mitigator (VB-Mitigator)
 
