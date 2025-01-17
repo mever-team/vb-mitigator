@@ -1,3 +1,5 @@
+![Project Logo](assets/vb-mitigator logo_250.png)
+
 # Visual Bias Mitigator (VB-Mitigator)
 
 
