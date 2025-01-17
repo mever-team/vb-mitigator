@@ -6,15 +6,17 @@ import torch.nn.functional as F
 import torchvision.models as models
 import torch
 
+
 def set_resnet_fc(model, num_classes):
     model.fc = nn.Linear(model.fc.in_features, num_classes)
     return model
 
+
 class ResNet18(nn.Module):
-    def __init__(self, num_classes=2):
+    def __init__(self, num_classes=2, pretrained=False):
         super().__init__()
 
-        model = resnet18()
+        model = resnet18(pretrained=pretrained)
         modules = list(model.children())[:-1]
         self.extractor = nn.Sequential(*modules)
         self.embed_size = 512
@@ -51,11 +53,12 @@ class ResNet18(nn.Module):
 
         return logits, logits2
 
+
 class ResNet50(nn.Module):
-    def __init__(self, num_classes=2):
+    def __init__(self, num_classes=2, pretrained=False):
         super().__init__()
 
-        model = resnet50()
+        model = resnet50(pretrained=pretrained)
         modules = list(model.children())[:-1]
         self.extractor = nn.Sequential(*modules)
         self.embed_size = 2048

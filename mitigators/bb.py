@@ -7,33 +7,6 @@ from .base_trainer import BaseTrainer
 
 class BBTrainer(BaseTrainer):
 
-    # def _setup_criterion(self):
-    #     # Example inputs
-    #     targets = self.dataloaders["train"].dataset.targets
-    #     biases = []
-    #     for b in self.biases:
-    #         biases.append(self.dataloaders["train"].dataset[b])
-
-    #     # Step 1: Stack all biases and create unique combinations
-    #     biases = np.stack(biases, axis=1)  # Shape: (num_samples, num_biases)
-    #     bias_labels = [
-    #         tuple(bias) for bias in biases
-    #     ]  # List of tuples for unique combinations
-    #     unique_bias_labels = list(set(bias_labels))  # Unique bias combinations
-
-    #     # Map each unique combination to a unique index
-    #     bias_label_to_index = {
-    #         label: idx for idx, label in enumerate(unique_bias_labels)
-    #     }
-    #     bias_indices = np.array(
-    #         [bias_label_to_index[bias] for bias in bias_labels]
-    #     )  # Bias indices
-
-    #     # Step 2: Compute the confusion matrix
-    #     conf_matrix = confusion_matrix(targets, bias_indices)
-
-    #     self.criterion = BBLoss(conf_matrix)
-
     def _setup_criterion(self):
         super()._setup_criterion()
         # Example inputs
@@ -67,7 +40,7 @@ class BBTrainer(BaseTrainer):
         outputs = self.model(inputs)
         if isinstance(outputs, tuple):
             outputs, _ = outputs
-        loss = self.criterion(outputs, targets)
+        loss = self.criterion_train(outputs, targets, biases)
         self._loss_backward(loss)
         self._optimizer_step()
         return {"train_cls_loss": loss}

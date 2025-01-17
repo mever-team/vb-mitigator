@@ -26,6 +26,7 @@ CFG.EXPERIMENT.SEED = 1
 # Model
 CFG.MODEL = CN()
 CFG.MODEL.TYPE = "resnet"
+CFG.MODEL.PRETRAINED = True
 
 # Solver
 CFG.SOLVER = CN()

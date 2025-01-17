@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 
 class SimpleConvNet(nn.Module):
-    def __init__(self, num_classes=10, kernel_size=7, **kwargs):
+    def __init__(self, num_classes=10, kernel_size=7, pretrained=False, **kwargs):
         super(SimpleConvNet, self).__init__()
         padding = kernel_size // 2
 

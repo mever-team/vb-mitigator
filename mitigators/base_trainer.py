@@ -11,6 +11,56 @@ from configs.cfg import show_cfg
 
 
 class BaseTrainer:
+    """
+    Base class for training models.
+    Args:
+        cfg (Config): Configuration object containing experiment settings.
+    Attributes:
+        cfg (Config): Configuration object.
+        logger (Logger): Logger for logging information.
+        device (torch.device): Device to run the model on (CPU or GPU).
+        current_epoch (int): Current epoch number.
+        num_class (int): Number of classes in the dataset.
+        biases (list): List of biases in the dataset.
+        dataloaders (dict): Dictionary of dataloaders for training, validation, and testing.
+        data_root (str): Root directory of the dataset.
+        target2name (dict): Mapping from target indices to names.
+        ba_groups (list): List of bias-aligned groups in the dataset.
+        optimizer (torch.optim.Optimizer): Optimizer for training the model.
+        criterion (torch.nn.Module): Loss function.
+        scheduler (torch.optim.lr_scheduler._LRScheduler): Learning rate scheduler.
+        metric_dict (dict): Dictionary containing metric information.
+        best_performance (float): Best performance metric value.
+        model (torch.nn.Module): Model to be trained.
+        log_path (str): Path to the log directory.
+        tf_writer (SummaryWriter): TensorBoard writer for logging.
+    Methods:
+        _setup_device(): Sets up the device for training (CPU or GPU).
+        _metric_specific_setups(): Sets up metric-specific configurations.
+        _setup_dataset(): Sets up the dataset and dataloaders.
+        _setup_optimizer(): Sets up the optimizer.
+        _setup_criterion(): Sets up the loss function.
+        _loss_backward(loss): Performs backpropagation on the loss.
+        _optimizer_step(): Performs an optimization step.
+        _set_train(): Sets the model to training mode.
+        _set_eval(): Sets the model to evaluation mode.
+        _setup_scheduler(): Sets up the learning rate scheduler.
+        _train_iter(batch): Performs a single training iteration.
+        _train_epoch(): Performs a single training epoch.
+        _val_iter(batch): Performs a single validation iteration.
+        _validate_epoch(stage): Performs a single validation epoch.
+        _method_specific_setups(): Placeholder for method-specific setups.
+        _setup_models(): Sets up the model.
+        _setup_logger(): Sets up the logger.
+        build_log_dict(p_dict, stage): Builds a dictionary for logging.
+        _log_epoch(log_dict, update_cpkt): Logs information for an epoch.
+        _update_best(log_dict): Updates the best performance metric.
+        _save_checkpoint(tag): Saves a checkpoint of the model.
+        load_checkpoint(tag): Loads a checkpoint of the model.
+        train(): Trains the model.
+        eval(): Evaluates the model.
+    """
+
     def __init__(self, cfg):
         self.cfg = cfg
         self._setup_logger()
@@ -49,8 +99,6 @@ class BaseTrainer:
         self.data_root = dataset["root"]
         self.target2name = dataset["target2name"]
         self.ba_groups = dataset["ba_groups"] if "ba_groups" in dataset else None
-
-        
 
     def _setup_optimizer(self):
         if self.cfg.SOLVER.TYPE == "SGD":
@@ -158,7 +206,7 @@ class BaseTrainer:
             all_data = {key: [] for key in self.biases}
             all_data["targets"] = []
             all_data["predictions"] = []
-            
+
             losses = []
             for batch in self.dataloaders[stage]:
                 batch_dict, loss = self._val_iter(batch)
@@ -168,7 +216,7 @@ class BaseTrainer:
 
             for key in all_data:
                 all_data[key] = np.concatenate(all_data[key])
-            #metric specific data
+            # metric specific data
             if self.ba_groups is not None:
                 all_data["ba_groups"] = self.ba_groups
             performance = get_performance[self.cfg.METRIC](all_data)
