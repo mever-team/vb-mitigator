@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visual Bias Mitigator documentation &mdash; Visual Bias Mitigator  documentation</title>
+  <title>Overview &mdash; Visual Bias Mitigator  documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -42,7 +42,25 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Visual Bias Mitigator documentation</a></li>
+<li><a class="reference internal" href="#">Overview</a></li>
+<li><a class="reference internal" href="#quickstart">Quickstart</a></li>
+<li><a class="reference internal" href="#modules">Modules</a><ul>
+<li><a class="reference internal" href="#methods">Methods</a></li>
+<li><a class="reference internal" href="#datasets">Datasets</a></li>
+<li><a class="reference internal" href="#evaluation-metrics">Evaluation Metrics</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#logs">Logs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#integrate-new-components">Integrate New Components</a><ul>
+<li><a class="reference internal" href="#method">Method</a></li>
+<li><a class="reference internal" href="#dataset">Dataset</a></li>
+<li><a class="reference internal" href="#metric">Metric</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#contributing">Contributing</a></li>
+<li><a class="reference internal" href="#faq">FAQ</a></li>
+<li><a class="reference internal" href="#changelog">Changelog</a></li>
 </ul>
 </div>
         </div>
@@ -59,7 +77,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Visual Bias Mitigator documentation</li>
+      <li class="breadcrumb-item active">Overview</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -69,13 +87,559 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="visual-bias-mitigator-documentation">
-<h1>Visual Bias Mitigator documentation<a class="headerlink" href="#visual-bias-mitigator-documentation" title="Link to this heading"></a></h1>
-<p>Add your content using <code class="docutils literal notranslate"><span class="pre">reStructuredText</span></code> syntax. See the
-<a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html">reStructuredText</a>
-documentation for details.</p>
-<div class="toctree-wrapper compound">
+  <div class="toctree-wrapper compound">
 </div>
+<section id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
+<p>The Visual Bias Mitigator is an open-source framework designed to empower researchers in the field of bias mitigation in deep learning, particularly within computer vision tasks. This codebase provides a comprehensive environment where users can easily implement, run, and evaluate existing visual bias mitigation methods.</p>
+<p>With the increasing awareness of bias in AI systems, it is crucial for researchers to have access to robust tools that facilitate the exploration and development of mitigation techniques. The Visual Bias Mitigator (VB-Mitigator) serves this purpose by offering:</p>
+<ul class="simple">
+<li><p><strong>Implemented Methods</strong>: A collection of established visual bias mitigation techniques that can be directly utilized, allowing researchers to replicate and understand their functionality.</p></li>
+<li><p><strong>Extensibility</strong>: Researxhers can exploit this code-base to develop custom bias mitigation approaches tailored to their specific needs. The framework is designed with flexibility in mind, enabling easy integration of new approaches.</p></li>
+<li><p><strong>Performance Comparison</strong>: The framework facilitates the performance performance between custom methods against state-of-the-art approaches.</p></li>
+</ul>
+<p>The aim of this repository is to facilitate research on the domain of visual bias mitigation in deep learning. By providing a comprehensive codebase that allows researchers to easily implement and build upon existing methodologies, we encourage the development of new approaches for addressing biases in computer vision tasks.</p>
+</section>
+<section id="quickstart">
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading"></a></h1>
+<p>Get started with Visual Bias Mitigator quickly:</p>
+<ol class="arabic">
+<li><p>Clone the git repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/gsarridis/vb-mitigator.git
+</pre></div>
+</div>
+</li>
+<li><p>Create a virtual environment using either pip or conda and install the required packages:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># create a virtual conda environmnet</span>
+conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>vb-mitigator<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.11
+
+<span class="c1"># activate the environment</span>
+conda<span class="w"> </span>activate<span class="w"> </span>vb-mitigator
+
+<span class="c1"># install the required packages</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</li>
+</ol>
+<ol class="arabic" start="2">
+<li><p>Run a sample script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># run BAdd method on UTKFace dataset</span>
+bash<span class="w"> </span>./scripts/utkface/badd/badd.sh
+</pre></div>
+</div>
+</li>
+<li><p>Check logs for results and metrics. The output is stored in the <cite>outputs/utkface_baselines/badd</cite> directory.</p>
+<p><strong>Output Structure:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>├── outputs
+│   ├── utkface_baselines
+│   │   ├── badd
+│   │   │   ├── logs.csv
+│   │   │   ├── out.log
+│   │   │   ├── best.pth
+│   │   │   ├── latest.pth
+│   │   │   └── train.events
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="modules">
+<h1>Modules<a class="headerlink" href="#modules" title="Link to this heading"></a></h1>
+<section id="methods">
+<h2>Methods<a class="headerlink" href="#methods" title="Link to this heading"></a></h2>
+<p>Currently, Visual Bias Mitigator offers the following methodologies for mitigating biases in deep learning models:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 37.5%" />
+<col style="width: 62.5%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Full Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ERM</p></td>
+<td><p>Empirical Risk Minimization</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://openreview.net/pdf?id=ryxGuJrFvS">GroupDro</a></p></td>
+<td><p>Group Distributionally Robust Optimization</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://arxiv.org/pdf/2207.10077">Debian</a></p></td>
+<td><p>Debiasing Alternate Networks</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://openaccess.thecvf.com/content_CVPR_2020/papers/Wang_Towards_Fairness_in_Visual_Recognition_Effective_Strategies_for_Bias_Mitigation_CVPR_2020_paper.pdf">DI</a></p></td>
+<td><p>Domain Independent</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://openaccess.thecvf.com/content/CVPR2021/papers/Tartaglione_EnD_Entangling_and_Disentangling_Deep_Representations_for_Bias_Correction_CVPR_2021_paper.pdf">EnD</a></p></td>
+<td><p>Entangling and Disentangling</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://proceedings.neurips.cc/paper_files/paper/2020/file/eddc3427c5d77843c2253f1e799fe933-Paper.pdf">LfF</a></p></td>
+<td><p>Learning from Failure</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://arxiv.org/pdf/2011.09468">SD</a></p></td>
+<td><p>Spectral Decouple</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://proceedings.neurips.cc/paper/2021/file/de8aa43e5d5fa8536cf23e54244476fa-Paper.pdf">BB</a></p></td>
+<td><p>Bias Balance</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10737139&amp;casa_token=gSlyiZksMtMAAAAA:2xksz_AVlz1KAlkmIXZ7MI0R4JWDbjdJ_trO9a9UOe6A7etlhNLN8beK1jGQEgWdcoDTbbFhJg&amp;tag=1">FLAC</a></p></td>
+<td><p>Fairness Aware Representation Learning</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://arxiv.org/pdf/2408.11439">BAdd</a></p></td>
+<td><p>Bias Addition</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://arxiv.org/pdf/2412.06632">Mavias</a></p></td>
+<td><p>Mitigate any Visual Bias</p></td>
+</tr>
+</tbody>
+</table>
+<p>To add a new method, follow the instructions in <a class="reference internal" href="#add-new-method"><span class="std std-ref">Add New Method</span></a>.</p>
+</section>
+<section id="datasets">
+<h2>Datasets<a class="headerlink" href="#datasets" title="Link to this heading"></a></h2>
+<p>Currently, Visual Bias Mitigator supports the following datasets:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Biases</p></th>
+<th class="head"><p>Target</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/grayhong/bias-contrastive-learning">Biased UTKFace</a></p></td>
+<td><p>Race or Age</p></td>
+<td><p>Gender</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/grayhong/bias-contrastive-learning">Biased CelebA</a></p></td>
+<td><p>Gender</p></td>
+<td><p>Blonde or Makeup</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/kohpangwei/group_DRO">Waterbirds</a></p></td>
+<td><p>Background (Water or Land)</p></td>
+<td><p>Bird Species</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/clovaai/rebias">Biased MNIST</a></p></td>
+<td><p>Background Colour</p></td>
+<td><p>Digits</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://arxiv.org/pdf/2408.11439">FB-Biased MNIST</a></p></td>
+<td><p>Background and Foreground Colours</p></td>
+<td><p>Digits</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/MadryLab/backgrounds_challenge">ImageNet9</a></p></td>
+<td><p>Unknown</p></td>
+<td><p>Dog, Bird, Vehicle, Reptile, Carnivore, Insect, Instrument, Primate, Fish</p></td>
+</tr>
+</tbody>
+</table>
+<p>Note that all datasets are automatically downloaded and preprocessed by the framework. The only extra requirement is for ImageNet9, which requires manually download the ImageNet dataset beforehand.</p>
+<p>To add a custom dataset, follow the instructions in <a class="reference internal" href="#add-new-dataset"><span class="std std-ref">Add New Dataset</span></a>.</p>
+</section>
+<section id="evaluation-metrics">
+<h2>Evaluation Metrics<a class="headerlink" href="#evaluation-metrics" title="Link to this heading"></a></h2>
+<p>Metrics used for fairness evaluation include:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 33.3%" />
+<col style="width: 66.7%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Metric</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/gsarridis/vb-mitigator/blob/main/tools/metrics/acc.py">Accuracy</a></p></td>
+<td><p>Measures the overall model performance. This metric can be used for balanced test sets.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/gsarridis/vb-mitigator/blob/main/tools/metrics/unb_bc_ba.py">Unb/BA/BC Accuracy</a></p></td>
+<td><p>Evaluates the model’s performance on unbiased, bias-aligned, and bias-conflicting samples.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/gsarridis/vb-mitigator/blob/main/tools/metrics/wg_ovr.py">WG and Ovr Accuracy</a></p></td>
+<td><p>Evaluates the least-performing subgroup and overall model performance.</p></td>
+</tr>
+</tbody>
+</table>
+<p>To add a new metric, follow the instructions in <a class="reference internal" href="#add-new-metric"><span class="std std-ref">Add New Metric</span></a>.</p>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<p>The configuration for the Visual Bias Mitigator is managed through a <cite>cfg.py</cite> file utilizing the <a class="reference external" href="https://github.com/rbgirshick/yacs">YACS</a> (Yet Another Configuration System) library. This design allows for easy customization of various parameters related to experiments, models, datasets, and mitigators.</p>
+<p><strong>Key Components of the Configuration</strong></p>
+<ul class="simple">
+<li><p><strong>Experiment Settings</strong>: Specify project details, experiment names, GPU settings, and random seed for reproducibility.</p></li>
+<li><p><strong>Model Configuration</strong>: Define the type of model to be used (e.g., ResNet) and whether to use pretrained weights.</p></li>
+<li><p><strong>Solver Parameters</strong>: Set up hyperparameters for training, including batch size, learning rate, weight decay, momentum, and training duration.</p></li>
+<li><p><strong>Logging Options</strong>: Configure logging details such as the frequency of TensorBoard updates, checkpoint saving intervals, and logging directory.</p></li>
+<li><p><strong>Dataset Specifications</strong>: Define the dataset type and associated biases, along with any dataset-specific parameters, such as image size and root directories for data.</p></li>
+<li><p><strong>Mitigator Settings</strong>: Configure the bias mitigation approach, specifying the type of mitigator and any additional parameters relevant to specific mitigation methods.</p></li>
+</ul>
+<p><strong>Example Usage</strong></p>
+<p>The configuration can be accessed and displayed using the <cite>show_cfg</cite> function, which logs the current configuration parameters to help users understand their settings. Here’s a brief example of how this is done:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">yacs.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">CfgNode</span> <span class="k">as</span> <span class="n">CN</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tools.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_msg</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">show_cfg</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">logger</span><span class="p">):</span>
+    <span class="n">dump_cfg</span> <span class="o">=</span> <span class="n">CN</span><span class="p">()</span>
+    <span class="n">dump_cfg</span><span class="o">.</span><span class="n">EXPERIMENT</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">EXPERIMENT</span>
+    <span class="n">dump_cfg</span><span class="o">.</span><span class="n">MODEL</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">MODEL</span>
+    <span class="n">dump_cfg</span><span class="o">.</span><span class="n">DATASET</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">DATASET</span>
+    <span class="n">dump_cfg</span><span class="o">.</span><span class="n">MITIGATOR</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">MITIGATOR</span>
+    <span class="n">dump_cfg</span><span class="o">.</span><span class="n">SOLVER</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">SOLVER</span>
+    <span class="n">dump_cfg</span><span class="o">.</span><span class="n">LOG</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">LOG</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">MITIGATOR</span><span class="o">.</span><span class="n">TYPE</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+        <span class="n">dump_cfg</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">cfg</span><span class="o">.</span><span class="n">MITIGATOR</span><span class="o">.</span><span class="n">TYPE</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">MITIGATOR</span><span class="o">.</span><span class="n">TYPE</span><span class="p">)})</span>
+    <span class="n">log_msg</span><span class="p">(</span><span class="s2">&quot;CONFIG:</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dump_cfg</span><span class="o">.</span><span class="n">dump</span><span class="p">()),</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+
+<span class="c1"># CFG example</span>
+
+<span class="n">CFG</span> <span class="o">=</span> <span class="n">CN</span><span class="p">()</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">EXPERIMENT</span> <span class="o">=</span> <span class="n">CN</span><span class="p">()</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">EXPERIMENT</span><span class="o">.</span><span class="n">PROJECT</span> <span class="o">=</span> <span class="s2">&quot;biased_mnist&quot;</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">EXPERIMENT</span><span class="o">.</span><span class="n">NAME</span> <span class="o">=</span> <span class="s2">&quot;dev&quot;</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">EXPERIMENT</span><span class="o">.</span><span class="n">TAG</span> <span class="o">=</span> <span class="s2">&quot;flac&quot;</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">EXPERIMENT</span><span class="o">.</span><span class="n">GPU</span> <span class="o">=</span> <span class="s2">&quot;cuda:0&quot;</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">EXPERIMENT</span><span class="o">.</span><span class="n">SEED</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</section>
+<section id="logs">
+<h2>Logs<a class="headerlink" href="#logs" title="Link to this heading"></a></h2>
+<p>The logging system is designed to store and organize all experiment-related outputs in a structured and accessible format. This setup facilitates tracking, visualization, and reproducibility of results. Each experiment’s outputs are stored under the <cite>outputs</cite> directory with the following structure:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>├── outputs
+│   ├── &lt;dataset&gt;_baselines
+│   │   ├── &lt;method&gt;&gt;
+│   │   │   ├── logs.csv
+│   │   │   ├── out.log
+│   │   │   ├── best.pth
+│   │   │   ├── latest.pth
+│   │   │   └── train.events
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>Description of Files</strong></p>
+<ul class="simple">
+<li><p><strong>`logs.csv`</strong>
+Contains a tabular record of the training process, including key metrics such as accuracy, loss, and validation performance for each epoch. This format is ideal for further analysis and visualization with external tools.</p></li>
+<li><p><strong>`out.log`</strong>
+A detailed log file capturing all information about the experiment run, including configuration settings, training progress, validation results, and any warnings or errors encountered.</p></li>
+<li><p><strong>`best.pth`</strong>
+Stores the model checkpoint with the best performance during training, based on the defined evaluation metric (e.g., validation accuracy).</p></li>
+<li><p><strong>`latest.pth`</strong>
+Stores the most recent model checkpoint, allowing experiments to resume from the latest training state.</p></li>
+<li><p><strong>`train.events`</strong>
+TensorBoard event file, storing detailed training and validation statistics for visualization through TensorBoard. This includes metrics such as loss curves and performance trends.</p></li>
+</ul>
+<p><strong>Benefits</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Readable Logs</strong>: The <cite>out.log</cite> and <cite>logs.csv</cite> files are human-readable, with the latter providing a structured tabular format to facilitate data processing and visualization.</p></li>
+<li><p><strong>Visualization</strong>: The <cite>train.events</cite> file integrates seamlessly with TensorBoard for real-time monitoring and analysis.</p></li>
+<li><p><strong>Reproducibility</strong>: By saving both <cite>best.pth</cite> and <cite>latest.pth</cite>, users can easily reproduce results or continue training.</p></li>
+<li><p><strong>Organized Structure</strong>: The directory hierarchy organizes outputs by experiment and method, ensuring clarity and ease of navigation.</p></li>
+</ol>
+<p>Note that, VB-Mitigator also supports Wandb logging for real-time monitoring and visualization of experiments. To enable Wandb logging, set <cite>LOG.WANDB</cite> to <cite>True</cite> in the configuration file.</p>
+</section>
+</section>
+<section id="integrate-new-components">
+<h1>Integrate New Components<a class="headerlink" href="#integrate-new-components" title="Link to this heading"></a></h1>
+<section id="method">
+<span id="add-new-method"></span><h2>Method<a class="headerlink" href="#method" title="Link to this heading"></a></h2>
+<p>To integrate a new method into the framework, you can use the <cite>BaseTrainer</cite> class provided in <cite>mitigators/base_trainer.py</cite>. This base class defines abstract functions for every step in the training pipeline, allowing you to override and customize the steps for your specific method. Below are the steps to add a new method:</p>
+<p><strong>Step 1: Create a New Method File</strong></p>
+<ol class="arabic">
+<li><p>Navigate to the <cite>mitigators</cite> directory.</p></li>
+<li><p>Create a new Python file for your method (e.g., <cite>new_method.py</cite>).</p></li>
+<li><p>Inherit the <cite>BaseTrainer</cite> class and override the functions where your new method intervenes. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">.base_trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTrainer</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">NewMethod</span><span class="p">(</span><span class="n">BaseTrainer</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_train_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="c1"># Override to define a custom training iteration</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Step 2: Add the Method to `mitigators/__init__.py`</strong></p>
+<ol class="arabic">
+<li><p>Open <cite>mitigators/__init__.py</cite>.</p></li>
+<li><p>Register the new method in the dictionary that maps method names to their respective classes. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">.new_method</span><span class="w"> </span><span class="kn">import</span> <span class="n">NewMethod</span>
+
+<span class="n">method_to_trainer</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;erm&quot;</span><span class="p">:</span> <span class="n">ERM</span><span class="p">,</span>
+    <span class="s2">&quot;new_method&quot;</span><span class="p">:</span> <span class="n">NewMethod</span><span class="p">,</span>  <span class="c1"># Add your method here</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Step 3: Add Default Hyperparameters to `./configs/cfg.py`</strong></p>
+<ol class="arabic">
+<li><p>Open <cite>cfg.py</cite>.</p></li>
+<li><p>Add a new configuration node for your method under <cite>CFG.MITIGATOR</cite>. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">CFG</span><span class="o">.</span><span class="n">MITIGATOR</span><span class="o">.</span><span class="n">NEW_METHOD</span> <span class="o">=</span> <span class="n">CN</span><span class="p">()</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">MITIGATOR</span><span class="o">.</span><span class="n">NEW_METHOD</span><span class="o">.</span><span class="n">ALPHA</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1"># Example hyperparameter</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">MITIGATOR</span><span class="o">.</span><span class="n">NEW_METHOD</span><span class="o">.</span><span class="n">BETA</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># Example hyperparameter</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Step 4: Create a Config File for the Experiment</strong></p>
+<ol class="arabic">
+<li><p>Navigate to the <cite>configs/&lt;dataset&gt;</cite> directory.</p></li>
+<li><p>Create a new directory for your method (e.g., <cite>new_method</cite>).</p></li>
+<li><p>Create a YAML file for the experiment (e.g., <cite>dev.yaml</cite>). Define the configuration settings specific to your experiment. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">EXPERIMENT</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;new_method&quot;</span>
+<span class="w">  </span><span class="nt">TAG</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dev&quot;</span>
+<span class="w">  </span><span class="nt">PROJECT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;biased_mnist_baselines&quot;</span>
+<span class="nt">DATASET</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;biased_mnist&quot;</span>
+<span class="w">  </span><span class="nt">BIASES</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;color&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">MITIGATOR</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;new_method&quot;</span>
+<span class="nt">SOLVER</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">BATCH_SIZE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+<span class="w">  </span><span class="nt">EPOCHS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class="w">  </span><span class="nt">LR</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span>
+<span class="w">  </span><span class="nt">TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Adam&quot;</span>
+<span class="w">  </span><span class="nt">SCHEDULER</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">LR_DECAY_STAGES</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">13</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">56</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">LR_DECAY_RATE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<span class="nt">MODEL</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;simple_conv&quot;</span>
+<span class="nt">METRIC</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;acc&quot;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Step 5: Create a Script for the Experiment</strong></p>
+<ol class="arabic">
+<li><p>Navigate to the <cite>scripts/&lt;dataset&gt;/</cite> directory.</p></li>
+<li><p>Create a new directory for your method (e.g., <cite>new_method</cite>).</p></li>
+<li><p>Inside the directory, create a shell script (e.g., <cite>exp.sh</cite>) to run the experiment. For example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+python<span class="w"> </span>tools/train.py<span class="w"> </span>--cfg<span class="w"> </span>configs/biased_mnist/new_method/dev.yaml
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Summary</strong></p>
+<p>By following these steps, you will:</p>
+<ul class="simple">
+<li><p>Define your new method in a modular and extensible way.</p></li>
+<li><p>Register the method to make it available for use.</p></li>
+<li><p>Configure and script an experiment for testing your method.</p></li>
+</ul>
+</section>
+<section id="dataset">
+<span id="add-new-dataset"></span><h2>Dataset<a class="headerlink" href="#dataset" title="Link to this heading"></a></h2>
+<p>The framework provides flexibility for adding new datasets. Follow these steps to integrate a new dataset into the framework:</p>
+<ol class="arabic">
+<li><p><strong>Create the Dataset Class</strong>
+- Implement the dataset class in <cite>datasets/&lt;new_dataset&gt;.py</cite>.
+- In the <cite>__getitem__</cite> method, return a dictionary in the following format:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+    <span class="n">img</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">bias</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">index</span><span class="p">],</span>
+        <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="n">index</span><span class="p">]),</span>
+        <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">biased_targets</span><span class="p">[</span><span class="n">index</span><span class="p">]),</span>
+    <span class="p">)</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;RGB&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_transform</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">img</span><span class="p">,</span> <span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="n">target</span><span class="p">,</span> <span class="s2">&quot;&lt;bias_name&gt;&quot;&quot;: bias, &quot;</span><span class="n">index</span><span class="s2">&quot;: index}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p><strong>Update the Dataset Builder</strong>
+- Modify <cite>datasets/builder.py</cite> to include your new dataset.
+- Add the logic to create dataloaders for training, validation, and testing. For Biased MNIST example:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">train_loader</span> <span class="o">=</span> <span class="n">get_color_mnist</span><span class="p">(</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">BIASED_MNIST</span><span class="o">.</span><span class="n">ROOT</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">SOLVER</span><span class="o">.</span><span class="n">BATCH_SIZE</span><span class="p">,</span>
+    <span class="n">data_label_correlation</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">BIASED_MNIST</span><span class="o">.</span><span class="n">CORR</span><span class="p">,</span>
+    <span class="n">n_confusing_labels</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+    <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">EXPERIMENT</span><span class="o">.</span><span class="n">SEED</span><span class="p">,</span>
+    <span class="n">aug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">val_loader</span> <span class="o">=</span> <span class="n">get_color_mnist</span><span class="p">(</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">BIASED_MNIST</span><span class="o">.</span><span class="n">ROOT</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+    <span class="n">data_label_correlation</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">n_confusing_labels</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+    <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train_val&quot;</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">EXPERIMENT</span><span class="o">.</span><span class="n">SEED</span><span class="p">,</span>
+    <span class="n">aug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">test_loader</span> <span class="o">=</span> <span class="n">get_color_mnist</span><span class="p">(</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">BIASED_MNIST</span><span class="o">.</span><span class="n">ROOT</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+    <span class="n">data_label_correlation</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">n_confusing_labels</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+    <span class="n">split</span><span class="o">=</span><span class="s2">&quot;valid&quot;</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">EXPERIMENT</span><span class="o">.</span><span class="n">SEED</span><span class="p">,</span>
+    <span class="n">aug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ul>
+<li><p>Construct a dataset dictionary with the following structure:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;num_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;num_groups&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">10</span>
+<span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;biases&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span>
+<span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;dataloaders&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;train&quot;</span><span class="p">:</span> <span class="n">train_loader</span><span class="p">,</span>
+    <span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="n">val_loader</span><span class="p">,</span>
+    <span class="s2">&quot;test&quot;</span><span class="p">:</span> <span class="n">test_loader</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;root&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">BIASED_MNIST</span><span class="o">.</span><span class="n">ROOT</span>
+<span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;target2name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">0</span><span class="p">:</span> <span class="s2">&quot;number zero&quot;</span><span class="p">,</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;number one&quot;</span><span class="p">,</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="s2">&quot;number two&quot;</span><span class="p">,</span>
+    <span class="mi">3</span><span class="p">:</span> <span class="s2">&quot;number three&quot;</span><span class="p">,</span>
+    <span class="mi">4</span><span class="p">:</span> <span class="s2">&quot;number four&quot;</span><span class="p">,</span>
+    <span class="mi">5</span><span class="p">:</span> <span class="s2">&quot;number five&quot;</span><span class="p">,</span>
+    <span class="mi">6</span><span class="p">:</span> <span class="s2">&quot;number six&quot;</span><span class="p">,</span>
+    <span class="mi">7</span><span class="p">:</span> <span class="s2">&quot;number seven&quot;</span><span class="p">,</span>
+    <span class="mi">8</span><span class="p">:</span> <span class="s2">&quot;number eight&quot;</span><span class="p">,</span>
+    <span class="mi">9</span><span class="p">:</span> <span class="s2">&quot;number nine&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p><strong>Update Configuration</strong>
+- Add any default hyperparameters specific to the new dataset to <cite>cfg.py</cite> under the <cite>CFG.DATASET.&lt;NEW_DATASET&gt;</cite> section.
+- For example:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">CFG</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">NEW_DATASET</span> <span class="o">=</span> <span class="n">CN</span><span class="p">()</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">NEW_DATASET</span><span class="o">.</span><span class="n">ROOT</span> <span class="o">=</span> <span class="s2">&quot;./data/new_dataset&quot;</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">NEW_DATASET</span><span class="o">.</span><span class="n">IMAGE_SIZE</span> <span class="o">=</span> <span class="mi">224</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">NEW_DATASET</span><span class="o">.</span><span class="n">BIAS</span> <span class="o">=</span> <span class="s2">&quot;bias_type&quot;</span>
+<span class="n">CFG</span><span class="o">.</span><span class="n">DATASET</span><span class="o">.</span><span class="n">NEW_DATASET</span><span class="o">.</span><span class="n">TARGET</span> <span class="o">=</span> <span class="s2">&quot;target_attribute&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p><strong>Create Experiment Configuration</strong>
+- Add a new configuration file in the <cite>configs</cite> directory specific to the new dataset.</p></li>
+<li><p><strong>Add Experiment Script</strong>
+- Create a script for running experiments with the new dataset in <cite>./scripts/&lt;new_dataset&gt;/&lt;method&gt;/exp.sh</cite>.</p></li>
+</ol>
+<p>By following these steps, you can seamlessly integrate new datasets into the framework while maintaining compatibility with its existing structure.</p>
+</section>
+<section id="metric">
+<span id="add-new-metric"></span><h2>Metric<a class="headerlink" href="#metric" title="Link to this heading"></a></h2>
+<p>To integrate a new metric into the framework, follow these steps:</p>
+<ol class="arabic">
+<li><p><strong>Define the Metric Function</strong>
+- Create a function for the new metric at <cite>tools/metrics/&lt;new_metric.py&gt;</cite>.
+- The function should compute the metric and return a dictionary containing the metric’s value(s). Example:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">new_metric</span><span class="p">(</span><span class="n">data_dict</span><span class="p">):</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;predictions&quot;</span><span class="p">]</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">data_dict</span><span class="p">[</span><span class="s2">&quot;targets&quot;</span><span class="p">]</span>
+
+    <span class="n">metric_value</span> <span class="o">=</span> <span class="n">some_computation</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+    <span class="c1"># you can return multiple values as a dictionary</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;new_metric_name&quot;</span><span class="p">:</span> <span class="n">metric_value</span><span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ul>
+<li><p>Additionally, define a dictionary that specifies optimization preferences (e.g., whether the metric is “high” or “low” for better performance (e.g. performance or error based metrics), and the value wrt which the best model is defined). For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">new_metric_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;best&quot;</span><span class="p">:</span> <span class="s2">&quot;high&quot;</span><span class="p">,</span> <span class="s2">&quot;performance&quot;</span><span class="p">:</span> <span class="s2">&quot;new_metric_name&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p><strong>Register the Metric</strong>
+- Add the metric dictionary and function to the <cite>metrics/__init__.py</cite> file by including them in <cite>metrics_dicts</cite> and <cite>get_performance</cite>:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">.new_metric</span><span class="w"> </span><span class="kn">import</span> <span class="n">new_metric_dict</span><span class="p">,</span> <span class="n">new_metric</span>
+
+<span class="n">metrics_dicts</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;acc&quot;</span><span class="p">:</span> <span class="n">acc_dict</span><span class="p">,</span>
+    <span class="s2">&quot;unb_bc_ba&quot;</span><span class="p">:</span> <span class="n">unb_bc_ba_dict</span><span class="p">,</span>
+    <span class="s2">&quot;wg_ovr&quot;</span><span class="p">:</span> <span class="n">wg_ovr_dict</span><span class="p">,</span>
+    <span class="c1"># Register your new metric dictionary</span>
+    <span class="s2">&quot;new_metric&quot;</span><span class="p">:</span> <span class="n">new_metric_dict</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">get_performance</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;acc&quot;</span><span class="p">:</span> <span class="n">acc</span><span class="p">,</span>
+    <span class="s2">&quot;unb_bc_ba&quot;</span><span class="p">:</span> <span class="n">unb_bc_ba</span><span class="p">,</span>
+    <span class="s2">&quot;wg_ovr&quot;</span><span class="p">:</span> <span class="n">wg_ovr</span><span class="p">,</span>
+    <span class="c1"># Register your new metric function</span>
+    <span class="s2">&quot;new_metric&quot;</span><span class="p">:</span> <span class="n">new_metric</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p><strong>Select the metrics in cfg</strong>
+- If the new metric requires specific hyperparameters, add them to the configuration file (<cite>cfg.py</cite>) under the appropriate section. For example:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">METRIC</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;new_metric&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<p>By following these steps, you can extend the framework with new metrics to suit your evaluation needs.</p>
+</section>
+</section>
+<section id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h1>
+<p>We welcome contributions! The ultimate goal of the Visual Bias Mitigator is to provide a comprehensive environment for bias mitigation research in computer vision and thus requires a community effort to intergrate new methods, datasets, and metrics.</p>
+<p>To contribute:</p>
+<ol class="arabic simple">
+<li><p>Fork the repository.</p></li>
+<li><p>Integrate your new feature.</p></li>
+<li><p>Submit a pull request with a detailed description.</p></li>
+</ol>
+</section>
+<section id="faq">
+<h1>FAQ<a class="headerlink" href="#faq" title="Link to this heading"></a></h1>
+<p><strong>Q: Can I use this for non-CV tasks?</strong></p>
+<p>A: Currently, Visual Bias Mitigator is optimized for computer vision but can be adapted for other tasks with custom methods.</p>
+</section>
+<section id="changelog">
+<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading"></a></h1>
+<p>Version 1.0.0:</p>
+<ul class="simple">
+<li><p>Initial release with support for 10 competitive bias mitigation approaches and 6 benchmarks.</p></li>
+<li><p>Extensive documentation and tutorials for easy integration and usage.</p></li>
+<li><p>Support for custom datasets, metrics, and methods.</p></li>
+</ul>
 </section>
 
 
