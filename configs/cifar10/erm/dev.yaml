@@ -1,0 +1,23 @@
+EXPERIMENT:
+  NAME: "erm"
+  TAG: "dev"
+  PROJECT: "cifar10_baselines"
+DATASET:
+  TYPE: "cifar10"
+  BIASES: ["unknown"]
+  CIFAR10:
+    BIAS: "unknown"
+MITIGATOR:
+  TYPE: "erm"
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 60
+  LR: 0.001
+  TYPE: "Adam"
+  WEIGHT_DECAY: 0.0
+  SCHEDULER:
+    LR_DECAY_STAGES: [50]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet20"
+METRIC: "acc"

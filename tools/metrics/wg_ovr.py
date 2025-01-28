@@ -11,9 +11,11 @@ def wg_ovr(data_dict):
     for key in sensitive_keys:
         data_dict[key] = [f"{key}_{value}" for value in data_dict[key]]
     sensitive_keys.append("targets")
-    sensitive = fb.Dimensions(*[fb.categories @ data_dict[key] for key in sensitive_keys])
-    sensitive = sensitive.intersectional()  # automatically find non-empty intersections
-    sensitive = sensitive.strict()  # keep only intersections that have no children
+    sensitive = fb.Dimensions(
+        *[fb.categories @ data_dict[key] for key in sensitive_keys]
+    )
+    # sensitive = sensitive.intersectional()  # automatically find non-empty intersections
+    # sensitive = sensitive.strict()  # keep only intersections that have no children
     # print(sensitive.keys().values.values())
     y = data_dict["targets"]
     yhat = data_dict["predictions"]
@@ -32,8 +34,7 @@ def wg_ovr(data_dict):
     #     )
     # all_reports = fb.Fork(reports)
     report = fb.reports.pairwise(predictions=yhat, labels=y, sensitive=sensitive)
-    # print(report.acc)    
-   
+    # print(report.acc)
 
     out = {
         "worst_group_accuracy": float(report.min.acc),

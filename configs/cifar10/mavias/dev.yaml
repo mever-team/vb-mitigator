@@ -1,0 +1,31 @@
+EXPERIMENT:
+  NAME: "mavias"
+  TAG: "dev"
+  PROJECT: "cifar10_baselines"
+DATASET:
+  TYPE: "cifar10"
+  BIASES: ["unknown"]
+  CIFAR10:
+    BIAS: "unknown"
+MITIGATOR:
+  TYPE: "mavias"
+  MAVIAS:
+    LOSS:
+      ALPHA: 0.001
+      LAMBDA: 0.7
+    PROJNET:
+      OPTIM:
+        WEIGHT_DECAY: 1e-1
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 120
+  LR: 0.001
+  WEIGHT_DECAY: 0.0
+  TYPE: "Adam"
+  SCHEDULER:
+    LR_DECAY_STAGES: [90, 110]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet20"
+METRIC: "acc"
+

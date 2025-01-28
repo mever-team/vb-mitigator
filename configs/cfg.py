@@ -24,11 +24,13 @@ CFG.EXPERIMENT.NAME = "dev"
 CFG.EXPERIMENT.TAG = "vanilla"
 CFG.EXPERIMENT.GPU = "cuda:0"  # or cpu
 CFG.EXPERIMENT.SEED = 1
+CFG.EXPERIMENT.EVAL = False
 
 # Model
 CFG.MODEL = CN()
 CFG.MODEL.TYPE = "resnet"
 CFG.MODEL.PRETRAINED = True
+CFG.MODEL.PATH = ""
 
 # Solver
 CFG.SOLVER = CN()
@@ -112,6 +114,18 @@ CFG.DATASET.IMAGENET9.BIAS = "unknown"
 CFG.DATASET.IMAGENET9.BENCHMARK_VAL = "original"  # choices: mixed_rand, mixed_next, mixed_same, no_fg, only_bg_b, only_bg_t, only_fg, original
 CFG.DATASET.IMAGENET9.BENCHMARK_TEST = "mixed_rand"  # choices: mixed_rand, mixed_next, mixed_same, no_fg, only_bg_b, only_bg_t, only_fg, original
 
+
+CFG.DATASET.CIFAR10 = CN()
+CFG.DATASET.CIFAR10.ROOT = "./data/cifar10"  # you should manually download ImageNet and define the root directory here.
+CFG.DATASET.CIFAR10.IMAGE_SIZE = 32
+CFG.DATASET.CIFAR10.BIAS = "clusters"
+
+CFG.DATASET.CIFAR100 = CN()
+CFG.DATASET.CIFAR100.ROOT = "./data/cifar100"  # you should manually download ImageNet and define the root directory here.
+CFG.DATASET.CIFAR100.IMAGE_SIZE = 32
+CFG.DATASET.CIFAR100.BIAS = "clusters"
+
+
 # MITIGATOR
 CFG.MITIGATOR = CN()
 CFG.MITIGATOR.TYPE = "erm"  # Vanilla as default
@@ -162,3 +176,8 @@ CFG.MITIGATOR.END = CN()
 CFG.MITIGATOR.END.ALPHA = 1
 CFG.MITIGATOR.END.BETA = 1
 CFG.MITIGATOR.END.WEIGHT = 1
+
+CFG.CLUSTERING = CN()
+CFG.CLUSTERING.DBSCAN = CN()
+CFG.CLUSTERING.DBSCAN.EPS = 1.0
+CFG.CLUSTERING.DBSCAN.MIN_SAMPLES = 5

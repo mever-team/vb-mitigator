@@ -3,6 +3,7 @@ from .efficientnet import EfficientNetB0
 from .resnet import ResNet18, ResNet50, ResNet50_Default
 from .vit import vit_b_16
 from .simple_conv import SimpleConvNet
+from .resnet_small import resnet20, resnet32
 
 
 models_dict = {
@@ -12,4 +13,6 @@ models_dict = {
     "resnet50_def": ResNet50_Default,
     "resnet50": ResNet50,
     "vit_b_16": vit_b_16,
+    "resnet20": resnet20,
+    "resnet32": resnet32,
 }
