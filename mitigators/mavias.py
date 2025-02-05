@@ -33,6 +33,7 @@ class MAVIASTrainer(BaseTrainer):
         self.model = get_model(
             self.cfg.MODEL.TYPE,
             self.num_class,
+            pretrained= self.cfg.MODEL.PRETRAINED
         )
         self.model.to(self.device)
 

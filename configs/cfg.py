@@ -125,6 +125,11 @@ CFG.DATASET.CIFAR100.ROOT = "./data/cifar100"  # you should manually download Im
 CFG.DATASET.CIFAR100.IMAGE_SIZE = 32
 CFG.DATASET.CIFAR100.BIAS = "clusters"
 
+CFG.DATASET.STANFORD_DOGS = CN()
+CFG.DATASET.STANFORD_DOGS.ROOT = "./data/stanford-dogs-dataset"  # you should manually download ImageNet and define the root directory here.
+CFG.DATASET.STANFORD_DOGS.IMAGE_SIZE = 224
+CFG.DATASET.STANFORD_DOGS.BIAS = "unknown"
+
 
 # MITIGATOR
 CFG.MITIGATOR = CN()

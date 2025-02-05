@@ -10,3 +10,4 @@ data/*/*
 !data/pickles/
 !data/clusters/
 /output/
+/tmp/
