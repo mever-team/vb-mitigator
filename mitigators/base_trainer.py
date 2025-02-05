@@ -230,6 +230,7 @@ class BaseTrainer:
         self.model = get_model(
             self.cfg.MODEL.TYPE,
             self.num_class,
+            pretrained=self.cfg.MODEL.PRETRAINED,
         )
         self.model.to(self.device)
 
@@ -352,6 +353,7 @@ class BaseTrainer:
         self.scheduler.load_state_dict(checkpoint["scheduler"])
         self.best_performance = checkpoint["best_performance"]
         self.current_epoch = checkpoint["epoch"]
+        print(f"Loaded checkpoint from {os.path.join(self.log_path, tag)}")
         print(
             log_msg(
                 f"Loaded checkpoint from {os.path.join(self.log_path, tag)}",
@@ -383,7 +385,7 @@ class BaseTrainer:
         self._save_checkpoint(tag="latest")
 
     def eval(self):
-        self.load_checkpoint(self.cfg.LOG.SAVE_CRITERION)
+        self.load_checkpoint(self.cfg.MODEL.PATH)
         test_performance = self._validate_epoch(stage="test")
         test_log_dict = self.build_log_dict(test_performance, stage="test")
         print(log_msg(f"Test performance: {test_log_dict}", "EVAL", self.logger))

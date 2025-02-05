@@ -7,7 +7,11 @@ import json
 import re
 import ast
 
+from matplotlib import pyplot as plt
+import numpy as np
 import ollama
+from sklearn.cluster import DBSCAN, KMeans
+from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 import pandas as pd
 import torch
@@ -19,6 +23,8 @@ from models.builder import get_model
 from models.simple_mlp import SimpleMLP
 from .base_trainer import BaseTrainer
 from tools.utils import load_ollama_docker
+from scipy.spatial.distance import cdist
+from scipy.cluster.hierarchy import dendrogram, linkage
 
 
 class MAVIASTrainer(BaseTrainer):
@@ -27,6 +33,7 @@ class MAVIASTrainer(BaseTrainer):
         self.model = get_model(
             self.cfg.MODEL.TYPE,
             self.num_class,
+            pretrained= self.cfg.MODEL.PRETRAINED
         )
         self.model.to(self.device)
 
@@ -101,6 +108,44 @@ class MAVIASTrainer(BaseTrainer):
 
         return {"train_cls_loss": ce_loss, "train_norm_loss": norm_loss}
 
+    # def _val_iter(self, batch):
+    #     if self.cfg.DATASET.TYPE != "cifar10":
+    #         return super(MAVIASTrainer, self)._val_iter()
+    #     else:
+    #         batch_dict = {}
+    #         inputs = batch["inputs"].to(self.device)
+    #         targets = batch["targets"].to(self.device)
+    #         indices = batch["index"]
+    #         outputs = self.model(inputs)
+    #         if isinstance(outputs, tuple):
+    #             outputs, _ = outputs
+    #         loss = self.criterion(outputs, targets)
+
+    #         tags = [self.index_to_tags_test[index.item()] for index in indices]
+    #         tag_emb = torch.stack(
+    #             [self.precomputed_embeddings_test[tag] for tag in tags]
+    #         )
+    #         # tag_emb to numpy
+    #         tag_emb = tag_emb.detach().cpu().numpy()
+    #         tag_emb = self.clustering_scaler.transform(tag_emb)
+    #         # # Compute distances between test embeddings and core embeddings
+    #         # distances = cdist(tag_emb, self.core_embeddings, metric="cosine")
+
+    #         # # Find the nearest core point for each test embedding
+    #         # nearest_core_indices = np.argmin(distances, axis=1)
+    #         # test_labels = self.core_labels[nearest_core_indices]
+
+    #         test_labels = self.clustering.predict(tag_emb)
+
+    #         test_labels = torch.tensor(
+    #             test_labels, dtype=torch.long, device=batch["targets"].device
+    #         )
+
+    #         batch_dict["predictions"] = torch.argmax(outputs, dim=1)
+    #         batch_dict["targets"] = batch["targets"]
+    #         batch_dict["clusters"] = test_labels
+    #         return batch_dict, loss
+
     def _optimizer_step(self):
         self.optimizer.step()
         self.optimizer_projection.step()
@@ -114,9 +159,9 @@ class MAVIASTrainer(BaseTrainer):
         return super()._set_eval()
 
     def _method_specific_setups(self):
-        self.get_ram_tags()
+        self.tags_df = self.get_ram_tags(split="train")
         self.get_relevant_tags()
-        self.get_irrelevant_tags()
+        self.tags_df = self.get_irrelevant_tags(self.tags_df, split="train")
         # print(self.tags_df)
         self.index_to_tags = {
             row["index"]: (
@@ -126,9 +171,61 @@ class MAVIASTrainer(BaseTrainer):
             )
             for _, row in self.tags_df.iterrows()
         }
-        self.precomputed_embeddings = self.precompute_text_embeddings()
+        self.precomputed_embeddings = self.precompute_text_embeddings(split="train")
+        if self.cfg.DATASET.TYPE == "cifar10":
+            self.tags_df_test = self.get_ram_tags(split="test")
+            self.tags_df_test = self.get_irrelevant_tags(
+                self.tags_df_test, split="test"
+            )
+            self.index_to_tags_test = {
+                row["index"]: (
+                    row["irrelevant_tags"].replace(" | ", ", ")
+                    if isinstance(row["irrelevant_tags"], str)
+                    else " "
+                )
+                for _, row in self.tags_df_test.iterrows()
+            }
+            self.precomputed_embeddings_test = self.precompute_text_embeddings(
+                split="test"
+            )
+            self.clustering = self.dbscan_clustering()
 
-    def get_irrelevant_tags(self):
+    def dbscan_clustering(self):
+        # check if they are saved
+        if os.path.isfile(os.path.join(self.data_root, "kmeans.pt")):
+            print(
+                f"Loading text embeddings from {os.path.join(self.data_root, 'kmeans.pt')}"
+            )
+            kmeans = torch.load(os.path.join(self.data_root, "kmeans.pt"))
+
+            train_prompts = list(self.precomputed_embeddings.keys())
+            train_embeddings = np.stack(
+                [self.precomputed_embeddings[prompt] for prompt in train_prompts]
+            )
+            self.clustering_scaler = StandardScaler()
+            train_embeddings = self.clustering_scaler.fit_transform(train_embeddings)
+            return kmeans
+        else:
+            # Convert embeddings to an array for clustering
+            train_prompts = list(self.precomputed_embeddings.keys())
+            train_embeddings = np.stack(
+                [self.precomputed_embeddings[prompt] for prompt in train_prompts]
+            )
+            print("Fitting KMeans on training embeddings...")
+            self.num_clusters = 100
+            kmeans = KMeans(n_clusters=self.num_clusters, random_state=42)
+            self.clustering_scaler = StandardScaler()
+            train_embeddings = self.clustering_scaler.fit_transform(train_embeddings)
+            kmeans.fit(train_embeddings)
+            print("Finished fit KMeans on training embeddings.")
+
+            torch.save(
+                kmeans,
+                os.path.join(self.data_root, f"kmeans.pt"),
+            )
+        return kmeans
+
+    def get_irrelevant_tags(self, df, split="train"):
         # check if self.tags_df["irrelevant_tags"] exists
         # if "irrelevant_tags" in self.tags_df.columns:
         #     return
@@ -140,11 +237,10 @@ class MAVIASTrainer(BaseTrainer):
             relevant = set(self.relevant_tags.get(row["target"], []))
             return " | ".join(all_tags - relevant)
 
-        self.tags_df["irrelevant_tags"] = self.tags_df.apply(
-            calc_irrelevant_tags, axis=1
-        )
+        df["irrelevant_tags"] = df.apply(calc_irrelevant_tags, axis=1)
         # save to csv
-        self.tags_df.to_csv(os.path.join(self.data_root, "train_tags.csv"), index=False)
+        df.to_csv(os.path.join(self.data_root, f"{split}_tags.csv"), index=False)
+        return df
 
     def get_relevant_tags(self):
         llm_name = self.cfg.MITIGATOR.MAVIAS.LLM.TYPE
@@ -190,7 +286,7 @@ class MAVIASTrainer(BaseTrainer):
                 # Process tags in batches of 100
 
                 for batch in split_into_batches(tags, batch_size):
-                    # print(f"batch: {batch}")
+                    print(f"batch: {batch}")
                     tag_list = ", ".join(
                         batch
                     )  # Join the batch into a comma-separated string
@@ -267,20 +363,19 @@ class MAVIASTrainer(BaseTrainer):
                 df.to_csv(csv_file_path, index=False)
                 self.relevant_tags[target] = relevant_tags
 
-    def get_ram_tags(self):
+    def get_ram_tags(self, split="train"):
 
         device = self.device
-        data_loader = self.dataloaders["tag_train"]
+        data_loader = self.dataloaders[f"tag_{split}"]
         outdir = self.data_root
         # Check if the file exists
-        if os.path.isfile(os.path.join(outdir, "train_tags.csv")):
-            print(f"Loading tags from {os.path.join(outdir, 'train_tags.csv')}")
+        p = os.path.join(outdir, f"{split}_tags.csv")
+        if os.path.isfile(os.path.join(outdir, f"{split}_tags.csv")):
+            print(f"Loading tags from {p}")
             # Load the tags from the CSV file
-            self.tags_df = pd.read_csv(os.path.join(outdir, "train_tags.csv"))
+            split_tags_df = pd.read_csv(os.path.join(outdir, f"{split}_tags.csv"))
         else:
-            print(
-                f"Extracting tags and saving to {os.path.join(outdir, 'train_tags.csv')}"
-            )
+            print(f"Extracting tags and saving to {p}")
             #######load model
             model = ram_plus(
                 pretrained="https://huggingface.co/xinyu1205/recognize-anything-plus-model/resolve/main/ram_plus_swin_large_14m.pth",
@@ -328,26 +423,33 @@ class MAVIASTrainer(BaseTrainer):
                 )
                 # Append to file in each iteration
                 if i == 0:
-                    tag_df.to_csv(os.path.join(outdir, "train_tags.csv"), index=False)
+                    tag_df.to_csv(
+                        os.path.join(outdir, f"{split}_tags.csv"), index=False
+                    )
                 else:
                     tag_df.to_csv(
-                        os.path.join(outdir, "train_tags.csv"),
+                        os.path.join(outdir, f"{split}_tags.csv"),
                         mode="a",
                         index=False,
                         header=False,
                     )
-            self.tags_df = pd.read_csv(os.path.join(outdir, "train_tags.csv"))
+            split_tags_df = pd.read_csv(os.path.join(outdir, f"{split}_tags.csv"))
 
-            # Convert sets to lists and save unique tags per class to CSV
-            unique_tags_df = pd.DataFrame(
-                [(label, list(tags)) for label, tags in unique_tags_per_class.items()],
-                columns=["class", "tags"],
-            )
-            unique_tags_df.to_csv(
-                os.path.join(outdir, "unique_tags_per_class.csv"), index=False
-            )
+            if split == "train":
+                # Convert sets to lists and save unique tags per class to CSV
+                unique_tags_df = pd.DataFrame(
+                    [
+                        (label, list(tags))
+                        for label, tags in unique_tags_per_class.items()
+                    ],
+                    columns=["class", "tags"],
+                )
+                unique_tags_df.to_csv(
+                    os.path.join(outdir, "unique_tags_per_class.csv"), index=False
+                )
+        return split_tags_df
 
-    def precompute_text_embeddings(self):
+    def precompute_text_embeddings(self, split):
         # check if they are saved
         # if os.path.isfile(os.path.join(self.data_root, "clip_embeddings.pt")):
         #     print(
@@ -361,10 +463,13 @@ class MAVIASTrainer(BaseTrainer):
         print("Precomputing text embeddings...")
         precomputed_embeddings = {}
         with torch.no_grad():
-            for batch in tqdm(self.dataloaders["train"]):
+            for batch in tqdm(self.dataloaders[split]):
 
                 indices = batch["index"]
-                tags = [self.index_to_tags[index.item()] for index in indices]
+                if split == "train":
+                    tags = [self.index_to_tags[index.item()] for index in indices]
+                else:
+                    tags = [self.index_to_tags_test[index.item()] for index in indices]
 
                 comma_separated_tags = [
                     f"a photo with {tags[i]}" for i in range(len(tags))
@@ -380,8 +485,9 @@ class MAVIASTrainer(BaseTrainer):
                     precomputed_embeddings[prompt.replace("a photo with ", "")] = (
                         emb.detach().cpu()
                     )
+
             torch.save(
                 precomputed_embeddings,
-                os.path.join(self.data_root, "clip_embeddings.pt"),
+                os.path.join(self.data_root, f"clip_embeddings_{split}.pt"),
             )
         return precomputed_embeddings

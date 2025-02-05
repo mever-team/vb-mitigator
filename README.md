@@ -13,9 +13,57 @@ With the increasing awareness of bias in AI systems, it is crucial for researche
 
 The aim of this repository is to facilitate research in the domain of visual bias mitigation. By providing a comprehensive codebase that allows researchers to easily implement and build upon existing methodologies, we encourage the development of new approaches for addressing biases in computer vision tasks.
 
+## Quickstart
 
-## [Documentation](https://vb-mitigator.readthedocs.io/)
+Get started with Visual Bias Mitigator quickly:
 
+### 1. Clone the Git Repository
+
+```bash
+git clone https://github.com/gsarridis/vb-mitigator.git
+```
+
+### 2. Create a Virtual Environment and Install Required Packages
+
+You can use either `pip` or `conda` to create a virtual environment and install dependencies:
+
+```bash
+# create a virtual conda environment
+conda create -n vb-mitigator python=3.11
+
+# activate the environment
+conda activate vb-mitigator
+
+# install the required packages
+pip install -r requirements.txt
+```
+
+### 3. Run a Sample Script
+
+```bash
+# run BAdd method on UTKFace dataset
+bash ./scripts/utkface/badd/badd.sh
+```
+
+### 4. Check Logs for Results and Metrics  
+
+The output is stored in the `outputs/utkface_baselines/badd` directory.
+
+#### **Output Structure:**
+
+```
+├── outputs
+│   ├── utkface_baselines
+│   │   ├── badd
+│   │   │   ├── logs.csv
+│   │   │   ├── out.log
+│   │   │   ├── best.pth
+│   │   │   ├── latest.pth
+│   │   │   └── train.events
+```
+
+## Documentation
+You can find the complete documentation for VB-Mitigator [here](https://vb-mitigator.readthedocs.io/).
 ## Citations
 
 ```
@@ -43,4 +91,4 @@ The aim of this repository is to facilitate research in the domain of visual bia
 ```
 
 **Maintainer:** Ioannis Sarridis (gsarridis@iti.gr)<br>
-**License:** TODO<br>
+

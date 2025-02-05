@@ -1,4 +1,5 @@
 from datasets.celeba import get_celeba
+from datasets.cifar100 import get_cifar100_loaders
 from datasets.imagenet9 import get_background_challenge_data, get_imagenet9l
 from .biased_mnist import get_color_mnist
 from .fb_biased_mnist import get_color_mnist as get_fb_color_mnist
@@ -6,6 +7,8 @@ from ram import get_transform
 from .custom_transforms import get_transform as get_transform_padded
 from .utk_face import get_utk_face
 from .waterbirds import get_waterbirds
+from .cifar10 import get_cifar10_loaders
+from .stanford_dogs import get_stanford_dogs_loader
 
 
 def get_dataset(cfg):
@@ -408,11 +411,220 @@ def get_dataset(cfg):
         if method_name == "mavias":
             tag_train_loader = get_imagenet9l(
                 root=cfg.DATASET.IMAGENET9.ROOT_IMAGENET,
-                batch_size=cfg.SOLVER.BATCH_SIZE,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
                 image_size=cfg.DATASET.IMAGENET9.IMAGE_SIZE,
                 transform=get_transform(
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),
             )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
+    elif dataset_name == "cifar10":
+        if method_name == "groupdro":
+            raise ValueError(
+                "GroupDro requires bias attribute annotations! The cifar10 dataset does not offer such information. Please select another method, or modify cifar10 class so that it incorporates your own bias annotations."
+            )
+        else:
+            train_loader = get_cifar10_loaders(
+                root=cfg.DATASET.CIFAR10.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                image_size=cfg.DATASET.CIFAR10.IMAGE_SIZE,
+                split="train",
+            )
+
+        val_loader = get_cifar10_loaders(
+            root=cfg.DATASET.CIFAR10.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.CIFAR10.IMAGE_SIZE,
+            split="test",
+        )
+
+        test_loader = get_cifar10_loaders(
+            root=cfg.DATASET.CIFAR10.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.CIFAR10.IMAGE_SIZE,
+            split="test",
+        )
+
+        dataset = {}
+        dataset["num_class"] = 10
+        dataset["num_groups"] = 10
+        dataset["biases"] = [cfg.DATASET.CIFAR10.BIAS]
+        dataset["dataloaders"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": test_loader,
+        }
+
+        dataset["target2name"] = {
+            0: "Airplane",
+            1: "Car",
+            2: "Bird",
+            3: "Cat",
+            4: "Deer",
+            5: "Dog",
+            6: "Frog",
+            7: "Horse",
+            8: "Ship",
+            9: "Truck",
+        }
+
+        dataset["root"] = cfg.DATASET.CIFAR10.ROOT
+        if method_name == "mavias":
+            tag_train_loader = get_cifar10_loaders(
+                root=cfg.DATASET.CIFAR10.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                image_size=cfg.DATASET.CIFAR10.IMAGE_SIZE,
+                split="train",
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+            tag_test_loader = get_cifar10_loaders(
+                root=cfg.DATASET.CIFAR10.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                image_size=cfg.DATASET.CIFAR10.IMAGE_SIZE,
+                split="test",
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+
+            dataset["dataloaders"]["tag_train"] = tag_train_loader
+            dataset["dataloaders"]["tag_test"] = tag_test_loader
+    elif dataset_name == "cifar100":
+        if method_name == "groupdro":
+            raise ValueError(
+                "GroupDro requires bias attribute annotations! The cifar100 dataset does not offer such information. Please select another method, or modify cifar100 class so that it incorporates your own bias annotations."
+            )
+        else:
+            train_loader = get_cifar100_loaders(
+                root=cfg.DATASET.CIFAR100.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                image_size=cfg.DATASET.CIFAR100.IMAGE_SIZE,
+                split="train",
+            )
+
+        val_loader = get_cifar100_loaders(
+            root=cfg.DATASET.CIFAR100.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.CIFAR100.IMAGE_SIZE,
+            split="test",
+        )
+
+        test_loader = get_cifar100_loaders(
+            root=cfg.DATASET.CIFAR100.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.CIFAR100.IMAGE_SIZE,
+            split="test",
+        )
+
+        dataset = {}
+        dataset["num_class"] = 10
+        dataset["num_groups"] = 10
+        dataset["biases"] = [cfg.DATASET.CIFAR100.BIAS]
+        dataset["dataloaders"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": test_loader,
+        }
+
+        class_names = (
+            train_loader.dataset.classes
+        )  # This returns a list of class names in order of indices
+
+        # Create a dictionary mapping index to class name
+        dataset["target2name"] = {idx: name for idx, name in enumerate(class_names)}
+
+        dataset["root"] = cfg.DATASET.CIFAR100.ROOT
+        if method_name == "mavias":
+            tag_train_loader = get_cifar100_loaders(
+                root=cfg.DATASET.CIFAR100.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                image_size=cfg.DATASET.CIFAR100.IMAGE_SIZE,
+                split="train",
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+            tag_test_loader = get_cifar100_loaders(
+                root=cfg.DATASET.CIFAR100.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                image_size=cfg.DATASET.CIFAR100.IMAGE_SIZE,
+                split="test",
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+
+            dataset["dataloaders"]["tag_train"] = tag_train_loader
+            dataset["dataloaders"]["tag_test"] = tag_test_loader
+    elif dataset_name == "stanford_dogs":
+        if method_name == "groupdro":
+            raise ValueError(
+                "GroupDro requires bias attribute annotations! The stanford_dogs dataset does not offer such information. Please select another method, or modify stanford_dogs class so that it incorporates your own bias annotations."
+            )
+        else:
+            train_loader = get_stanford_dogs_loader(
+                root=cfg.DATASET.STANFORD_DOGS.ROOT,
+                batch_size=cfg.SOLVER.BATCH_SIZE,
+                image_size=cfg.DATASET.STANFORD_DOGS.IMAGE_SIZE,
+                split="train",
+            )
+
+        val_loader = get_stanford_dogs_loader(
+            root=cfg.DATASET.STANFORD_DOGS.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.STANFORD_DOGS.IMAGE_SIZE,
+            split="test",
+        )
+
+        test_loader = get_stanford_dogs_loader(
+            root=cfg.DATASET.STANFORD_DOGS.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.STANFORD_DOGS.IMAGE_SIZE,
+            split="test",
+        )
+
+        dataset = {}
+        dataset["num_class"] = 120
+        dataset["num_groups"] = 120
+        dataset["biases"] = [cfg.DATASET.STANFORD_DOGS.BIAS]
+        dataset["dataloaders"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": test_loader,
+        }
+
+        class_names = (
+            train_loader.dataset.classes
+        )  # This returns a list of class names in order of indices
+        class_names = [name + " dog" for name in class_names]
+
+        # Create a dictionary mapping index to class name
+        dataset["target2name"] = {idx: name for idx, name in enumerate(class_names)}
+
+        dataset["root"] = cfg.DATASET.STANFORD_DOGS.ROOT
+        if method_name == "mavias":
+            tag_train_loader = get_stanford_dogs_loader(
+                root=cfg.DATASET.STANFORD_DOGS.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                image_size=cfg.DATASET.STANFORD_DOGS.IMAGE_SIZE,
+                split="train",
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+            tag_test_loader = get_stanford_dogs_loader(
+                root=cfg.DATASET.STANFORD_DOGS.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                image_size=cfg.DATASET.STANFORD_DOGS.IMAGE_SIZE,
+                split="test",
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+
+            dataset["dataloaders"]["tag_train"] = tag_train_loader
+            dataset["dataloaders"]["tag_test"] = tag_test_loader
+
     return dataset

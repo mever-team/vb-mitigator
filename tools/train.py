@@ -10,7 +10,10 @@ def main(cfg):
 
     # train
     trainer = method_to_trainer[cfg.MITIGATOR.TYPE](cfg)
-    trainer.train()
+    if cfg.EXPERIMENT.EVAL:
+        trainer.eval()
+    else:
+        trainer.train()
 
 
 if __name__ == "__main__":

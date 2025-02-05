@@ -1,0 +1,1 @@
+python tools/train.py --cfg configs/cifar100/mavias/dev.yaml

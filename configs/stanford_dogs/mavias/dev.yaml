@@ -1,0 +1,33 @@
+EXPERIMENT:
+  NAME: "mavias"
+  TAG: "dev"
+  PROJECT: "stanford_dogs_baselines"
+DATASET:
+  TYPE: "stanford_dogs"
+  BIASES: ["unknown"]
+MITIGATOR:
+  TYPE: "mavias"
+  MAVIAS:
+    LOSS:
+      ALPHA: 0.01
+      LAMBDA: 0.5
+    # LLM:
+    #   TYPE: "deepseek-r1:70b"
+
+    # PROJNET:
+    #   OPTIM:
+    #     WEIGHT_DECAY: 1e-1
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 400
+  LR: 0.001
+  WEIGHT_DECAY: 0.0
+  TYPE: "Adam"
+  SCHEDULER:
+    LR_DECAY_STAGES: [250, 300, 350]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet18"
+  PRETRAINED: True
+METRIC: "acc"
+
