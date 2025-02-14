@@ -1,0 +1,1 @@
+python tools/train.py --cfg configs/urbancars/mavias/dev.yaml

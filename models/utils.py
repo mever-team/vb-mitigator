@@ -44,3 +44,11 @@ def get_model_dict(dataset_name, bias_name):
 
     model_dict = torch.load(model_path)
     return model_dict
+
+
+def get_local_model_dict(model_path):
+    # Check if the model file exists
+    if not os.path.exists(model_path):
+        print(f"Bias-capturing classifier not found at {model_path}.")
+    model_dict = torch.load(model_path)
+    return model_dict

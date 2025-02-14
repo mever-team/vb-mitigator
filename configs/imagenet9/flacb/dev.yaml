@@ -1,0 +1,27 @@
+EXPERIMENT:
+  NAME: "flacb"
+  TAG: "dev"
+  PROJECT: "imagenet9_baselines"
+DATASET:
+  TYPE: "imagenet9"
+  BIASES: ["unknown"]
+MITIGATOR:
+  TYPE: "flacb"
+  FLACB:
+    BCC_PATH: "./output/imagenet9_baselines/tags/erm/best"
+    LOSS:
+      ALPHA: 100.0
+      CE_WEIGHT: 1.0
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 40
+  LR: 0.001
+  TYPE: "SGD"
+  WEIGHT_DECAY: 1e-4
+  SCHEDULER:
+    LR_DECAY_STAGES: [13, 26]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet50"
+  PRETRAINED: True
+METRIC: "wg_ovr_tags"

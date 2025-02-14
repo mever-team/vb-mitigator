@@ -129,19 +129,21 @@ def get_waterbirds(
 ) -> None:
     scale = 256.0 / 224.0
     target_resolution = (224, 224)
-    transform_test = transforms.Compose(
-        [
-            transforms.Resize(
-                (
-                    int(target_resolution[0] * scale),
-                    int(target_resolution[1] * scale),
-                )
-            ),
-            transforms.CenterCrop(target_resolution),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
+    transform_test = transform
+    if transform_test is None:
+        transform_test = transforms.Compose(
+            [
+                transforms.Resize(
+                    (
+                        int(target_resolution[0] * scale),
+                        int(target_resolution[1] * scale),
+                    )
+                ),
+                transforms.CenterCrop(target_resolution),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
     transform_train = transform
     if transform_train is None:
         transform_train = transforms.Compose(
@@ -189,7 +191,7 @@ def get_waterbirds(
             num_workers=n_workers,
             sampler=sampler,
         )
-        return train_loader
+        return train_loader, train_dataset
     elif split == "val":
         val_dataset = WaterbirdsDataset(
             raw_data_path=root_dir,
@@ -203,7 +205,7 @@ def get_waterbirds(
             shuffle=False,
             num_workers=n_workers,
         )
-        return val_loader
+        return val_loader, val_dataset
     elif split == "test":
         test_dataset = WaterbirdsDataset(
             raw_data_path=root_dir,
@@ -218,6 +220,6 @@ def get_waterbirds(
             shuffle=False,
             num_workers=n_workers,
         )
-        return test_loader
+        return test_loader, test_dataset
     else:
         raise ValueError(f"split {split} not recognized")

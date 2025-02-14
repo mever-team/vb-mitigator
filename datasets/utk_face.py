@@ -298,4 +298,4 @@ def get_utk_face(
         drop_last=two_crop,
     )
 
-    return dataloader
+    return dataloader, dataset

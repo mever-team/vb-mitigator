@@ -229,4 +229,4 @@ def get_celeba(
         pin_memory=True,
         drop_last=two_crop,
     )
-    return dataloader
+    return dataloader, dataset

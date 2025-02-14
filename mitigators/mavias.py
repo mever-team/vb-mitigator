@@ -31,10 +31,14 @@ class MAVIASTrainer(BaseTrainer):
 
     def _setup_models(self):
         self.model = get_model(
-            self.cfg.MODEL.TYPE,
-            self.num_class,
-            pretrained= self.cfg.MODEL.PRETRAINED
+            self.cfg.MODEL.TYPE, self.num_class, pretrained=self.cfg.MODEL.PRETRAINED
         )
+        if self.cfg.MODEL.FREEZE_BACKBONE:
+            for param in self.model.parameters():
+                param.requires_grad = False
+            for param in self.model.fc.parameters():
+                param.requires_grad = True
+
         self.model.to(self.device)
 
         self.proj_net = SimpleMLP(
@@ -56,7 +60,22 @@ class MAVIASTrainer(BaseTrainer):
         self.clip_model = CLIPModel.from_pretrained(clip_model_id).to(self.device)
 
     def _setup_optimizer(self):
-        super(MAVIASTrainer, self)._setup_optimizer()
+        parameters = [p for p in self.model.parameters() if p.requires_grad]
+        if self.cfg.SOLVER.TYPE == "SGD":
+            self.optimizer = torch.optim.SGD(
+                parameters,
+                lr=self.cfg.SOLVER.LR,
+                momentum=self.cfg.SOLVER.MOMENTUM,
+                weight_decay=self.cfg.SOLVER.WEIGHT_DECAY,
+            )
+        elif self.cfg.SOLVER.TYPE == "Adam":
+            self.optimizer = torch.optim.Adam(
+                parameters,
+                lr=self.cfg.SOLVER.LR,
+                weight_decay=self.cfg.SOLVER.WEIGHT_DECAY,
+            )
+        else:
+            raise ValueError(f"Unsupported optimizer type: {self.cfg.SOLVER.TYPE}")
         parameters_projection = self.proj_net.parameters()
 
         if self.cfg.MITIGATOR.MAVIAS.PROJNET.OPTIM.TYPE == "SGD":

@@ -398,7 +398,7 @@ def get_color_mnist(
             drop_last=False,
         )
 
-        return dataloader
+        return dataloader, dataset
 
     else:
         dataset = ColourBiasedMNIST(
@@ -457,4 +457,4 @@ def get_color_mnist(
             drop_last=split == "train",
         )
 
-        return dataloader
+        return dataloader, dataset

@@ -1125,4 +1125,4 @@ def get_imagenet9l(
         num_workers=workers,
         pin_memory=True,
     )
-    return train_loader
+    return train_loader, train_dataset

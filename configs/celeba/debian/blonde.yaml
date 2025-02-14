@@ -12,13 +12,15 @@ MITIGATOR:
   TYPE: "debian"
 SOLVER:
   BATCH_SIZE: 128
-  EPOCHS: 20
+  EPOCHS: 40
   LR: 0.001
   TYPE: "Adam"
-  WEIGHT_DECAY: 0.0
+  WEIGHT_DECAY: 1e-4
   SCHEDULER:
-    LR_DECAY_STAGES: [60]
+    LR_DECAY_STAGES: [13, 26]
     LR_DECAY_RATE: 0.1
 MODEL:
   TYPE: "resnet18"
-METRIC: "unb_bc_ba"
+  PRETRAINED: True
+  FREEZE_BACKBONE: False
+METRIC: "wg_ovr_tags"
