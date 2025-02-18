@@ -87,6 +87,7 @@ class BaseTrainer:
         self._metric_specific_setups()
         self._basic_eval_setups()
         self._method_specific_setups()
+        self._setup_resume()
         show_cfg(cfg, self.logger)
 
     def _setup_resume(self):
@@ -611,7 +612,8 @@ class BaseTrainer:
         )
 
     def train(self):
-        for epoch in range(self.cfg.SOLVER.EPOCHS):
+        c_epoch = self.current_epoch
+        for epoch in range(c_epoch, self.cfg.SOLVER.EPOCHS):
             self.current_epoch = epoch
             log_dict = self._train_epoch()
             # log_dict = {}

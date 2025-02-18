@@ -126,7 +126,8 @@ class ERMTagsTrainer(BaseTrainer):
             return tags_df
 
     def train(self):
-        for epoch in range(self.cfg.SOLVER.EPOCHS):
+        c_epoch = self.current_epoch
+        for epoch in range(c_epoch, self.cfg.SOLVER.EPOCHS):
             self.current_epoch = epoch
             log_dict = self._train_epoch()
             # log_dict = {}
