@@ -1034,12 +1034,14 @@ class ImageNet9LDataset(Dataset):
 
         # Filter and remap classes
         self.samples = []
+        self.targets = []
         for path, target in self.dataset.samples:
             str_target = str(target)
             if str_target in self.class_mapping:
                 new_target = self.class_mapping[str_target]
                 if new_target != -1:  # Only include classes that are not mapped to -1
                     self.samples.append((path, new_target))
+                    self.targets.append(new_target)
 
     def __len__(self):
         return len(self.samples)
@@ -1053,24 +1055,27 @@ class ImageNet9LDataset(Dataset):
 
 
 def get_background_challenge_data(
-    root, bench, batch_size=64, workers=4, image_size=224
+    root, bench, batch_size=64, workers=4, image_size=224, transform=None
 ) -> None:
     scale = (image_size + 32) / image_size
     target_resolution = (image_size, image_size)
 
-    transform_test = transforms.Compose(
-        [
-            transforms.Resize(
-                (
-                    int(target_resolution[0] * scale),
-                    int(target_resolution[1] * scale),
-                )
-            ),
-            transforms.CenterCrop(target_resolution),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
+    if transform == None:
+        transform_test = transforms.Compose(
+            [
+                transforms.Resize(
+                    (
+                        int(target_resolution[0] * scale),
+                        int(target_resolution[1] * scale),
+                    )
+                ),
+                transforms.CenterCrop(target_resolution),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
+    else:
+        transform_test = transform
     if not os.path.isdir(os.path.join(root, "bg_challenge")):
         download_imagenet9(root)
 
@@ -1090,7 +1095,13 @@ def get_background_challenge_data(
 
 
 def get_imagenet9l(
-    root, batch_size=64, workers=4, transform=None, image_size=224, sampler=None
+    root,
+    batch_size=64,
+    workers=4,
+    transform=None,
+    image_size=224,
+    sampler=None,
+    shuffle=True,
 ) -> None:
     scale = (image_size + 32) / image_size
     target_resolution = (image_size, image_size)
@@ -1121,7 +1132,7 @@ def get_imagenet9l(
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=shuffle,
         num_workers=workers,
         pin_memory=True,
     )

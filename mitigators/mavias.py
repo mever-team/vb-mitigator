@@ -386,15 +386,25 @@ class MAVIASTrainer(BaseTrainer):
 
         device = self.device
         data_loader = self.dataloaders[f"tag_{split}"]
+        total_samples = len(data_loader.dataset)
         outdir = self.data_root
         # Check if the file exists
         p = os.path.join(outdir, f"{split}_tags.csv")
-        if os.path.isfile(os.path.join(outdir, f"{split}_tags.csv")):
+
+        # Check if the CSV file exists and find the last processed index
+        if os.path.isfile(p):
             print(f"Loading tags from {p}")
-            # Load the tags from the CSV file
-            split_tags_df = pd.read_csv(os.path.join(outdir, f"{split}_tags.csv"))
+            split_tags_df = pd.read_csv(p)
+
+            if not split_tags_df.empty:
+                last_idx = split_tags_df["index"].max()  # Get the last processed index
+            else:
+                last_idx = -1
         else:
-            print(f"Extracting tags and saving to {p}")
+            last_idx = -1  # No file, start from the beginning
+
+        if last_idx < total_samples - 1:
+            print(f"Extracting tags from index {last_idx + 1} and saving to {p}")
             #######load model
             model = ram_plus(
                 pretrained="https://huggingface.co/xinyu1205/recognize-anything-plus-model/resolve/main/ram_plus_swin_large_14m.pth",
@@ -410,6 +420,11 @@ class MAVIASTrainer(BaseTrainer):
 
             # Loop through batches
             for i, batch in enumerate(tqdm(data_loader)):
+                indices = batch["index"].detach().cpu().numpy()
+
+                # Skip batches that were already processed
+                if indices[0] <= last_idx:
+                    continue
                 # Initialize an empty list to store tags
                 tag_list = []
                 index_list = []

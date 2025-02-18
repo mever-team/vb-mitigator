@@ -18,6 +18,7 @@ from models.builder import get_model
 from .base_trainer import BaseTrainer
 from tools.utils import load_ollama_docker
 from tools.metrics import metrics_dicts, get_performance
+from tools.utils import log_msg
 
 
 # Function to check if a sample has any of the saved tags for its class
@@ -88,7 +89,7 @@ class ERMTagsTrainer(BaseTrainer):
                 class_name: [] for class_name in self.target2name.values()
             }
             name2idx = {}
-            for key,value in self.target2name.items():
+            for key, value in self.target2name.items():
                 name2idx[value] = key
 
             for class_name in class_tag_correct_counts:
@@ -97,10 +98,12 @@ class ERMTagsTrainer(BaseTrainer):
                         class_tag_correct_counts[class_name][tag]
                         / class_tag_total_counts[class_name][tag]
                     )
-                    if accuracy > (threshold[f"accuracy_{name2idx[class_name]}"]/100):
+                    if accuracy > (threshold[f"accuracy_{name2idx[class_name]}"] / 100):
                         tags_above_threshold[class_name].append(tag)
                         tags_above_threshold_acc[class_name].append(accuracy)
-                        tags_above_threshold_samples[class_name].append(class_tag_total_counts[class_name][tag])
+                        tags_above_threshold_samples[class_name].append(
+                            class_tag_total_counts[class_name][tag]
+                        )
 
             # Save results to CSV and JSON
             tags_for_csv = []
@@ -108,18 +111,19 @@ class ERMTagsTrainer(BaseTrainer):
                 tags_above_threshold.keys(),
                 tags_above_threshold.values(),
                 tags_above_threshold_acc.values(),
-                tags_above_threshold_samples.values()
+                tags_above_threshold_samples.values(),
             ):
                 for tag, acc, n_s in zip(tags, accs, n_samples):
                     tags_for_csv.append([class_name, tag, acc, n_s])
 
-            tags_df = pd.DataFrame(tags_for_csv, columns=["Class", "Tag", "Acc", "Samples"])
+            tags_df = pd.DataFrame(
+                tags_for_csv, columns=["Class", "Tag", "Acc", "Samples"]
+            )
             tags_df = tags_df.sort_values(by="Acc", ascending=False)
             tags_df.to_csv(
                 os.path.join(self.data_root, "overperforming_tags.csv"), index=False
             )
             return tags_df
-
 
     def train(self):
         for epoch in range(self.cfg.SOLVER.EPOCHS):
@@ -148,6 +152,8 @@ class ERMTagsTrainer(BaseTrainer):
                     self.build_log_dict(test_performance_tags, stage="test_tags")
                 )
             self._log_epoch(log_dict, update_cpkt)
+            self._save_checkpoint(tag=f"current_{self.cfg.EXPERIMENT.SEED}")
+
         self._save_checkpoint(tag="latest")
 
     def _method_specific_setups(self):
@@ -383,3 +389,16 @@ class ERMTagsTrainer(BaseTrainer):
                     os.path.join(outdir, "unique_tags_per_class.csv"), index=False
                 )
         return split_tags_df
+
+    def eval(self):
+        self.load_checkpoint(self.cfg.MODEL.PATH)
+        test_performance = self._validate_epoch(stage="test")
+        test_log_dict = self.build_log_dict(test_performance, stage="test")
+        self.overperforming_tags_df = self.get_overperforming_tags(
+            stage="test", threshold=test_performance
+        )
+        test_performance_tags = self._validate_epoch_tags(stage="test")
+        test_log_dict.update(
+            self.build_log_dict(test_performance_tags, stage="test_tags")
+        )
+        print(log_msg(f"Test performance: {test_log_dict}", "EVAL", self.logger))

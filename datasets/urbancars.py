@@ -91,7 +91,7 @@ class UrbanCars(Dataset):
         self.obj_label = self.obj_bg_co_occur_obj_label_list[:, 0]
         self.bg_label = self.obj_bg_co_occur_obj_label_list[:, 1]
         self.co_occur_obj_label = self.obj_bg_co_occur_obj_label_list[:, 2]
-
+        self.targets = self.obj_label
         num_shortcut_category = 4
         shortcut_label = self.bg_label * 2 + self.co_occur_obj_label
 

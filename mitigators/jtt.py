@@ -3,6 +3,7 @@
 from .base_trainer import BaseTrainer
 import torch
 from torch.utils.data import Subset, ConcatDataset
+from models.utils import get_local_model_dict
 
 
 class JTTTrainer(BaseTrainer):
@@ -17,21 +18,28 @@ class JTTTrainer(BaseTrainer):
             momentum=cfg.SOLVER.MOMENTUM,
             weight_decay=cfg.SOLVER.WEIGHT_DECAY,
         )
-        
-        print(f"training for {cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS} epoch(s) to detect the biases.")
-        for _ in range(cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS):
-            for batch in self.dataloaders["train"]:
-                inputs = batch["inputs"].to(self.device)
-                targets = batch["targets"].to(self.device)
+        if cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS == 0:
+            self.model = get_local_model_dict(self.cfg.MITIGATOR.JTT.BCC_PATH)
+            print(
+                f"loaded vinilla model as bias discovery model ({cfg.MITIGATOR.JTT.BCC_PATH})"
+            )
+        else:
+            print(
+                f"training for {cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS} epoch(s) to detect the biases."
+            )
+            for _ in range(cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS):
+                for batch in self.dataloaders["train"]:
+                    inputs = batch["inputs"].to(self.device)
+                    targets = batch["targets"].to(self.device)
 
-                outputs = self.model(inputs)
-                if isinstance(outputs, tuple):
-                    outputs, _ = outputs
-                loss = self.criterion(outputs, targets)
+                    outputs = self.model(inputs)
+                    if isinstance(outputs, tuple):
+                        outputs, _ = outputs
+                    loss = self.criterion(outputs, targets)
 
-                self._loss_backward(loss)
-                erm_id_optimizer.step()
-                erm_id_optimizer.zero_grad(set_to_none=True)
+                    self._loss_backward(loss)
+                    erm_id_optimizer.step()
+                    erm_id_optimizer.zero_grad(set_to_none=True)
 
         self.model.eval()
 

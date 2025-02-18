@@ -89,6 +89,15 @@ class BaseTrainer:
         self._method_specific_setups()
         show_cfg(cfg, self.logger)
 
+    def _setup_resume(self):
+        current_checkpoint = os.path.join(
+            self.log_path, f"current_{self.cfg.EXPERIMENT.SEED}"
+        )
+
+        if os.path.exists(current_checkpoint):
+            print(f"Resuming model from {current_checkpoint}")
+            self.load_checkpoint(f"current_{self.cfg.EXPERIMENT.SEED}")
+
     def _setup_device(self):
         return torch.device(
             self.cfg.EXPERIMENT.GPU if torch.cuda.is_available() else "cpu"
@@ -631,6 +640,7 @@ class BaseTrainer:
             update_cpkt = self._update_best(log_dict)
             if update_cpkt:
                 self._save_checkpoint(tag="best")
+            self._save_checkpoint(tag=f"current_{self.cfg.EXPERIMENT.SEED}")
             self._log_epoch(log_dict, update_cpkt)
         self._save_checkpoint(tag="latest")
 

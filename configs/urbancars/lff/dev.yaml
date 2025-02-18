@@ -1,12 +1,12 @@
 EXPERIMENT:
-  NAME: "jtt"
+  NAME: "lff"
   TAG: "dev"
   PROJECT: "urbancars_baselines"
 DATASET:
   TYPE: "urbancars"
   BIASES: ["bj_cooc_obj"]
 MITIGATOR:
-  TYPE: "jtt"
+  TYPE: "lff"
 SOLVER:
   BATCH_SIZE: 64
   EPOCHS: 150

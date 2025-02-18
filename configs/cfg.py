@@ -31,7 +31,7 @@ CFG.MODEL = CN()
 CFG.MODEL.TYPE = "resnet"
 CFG.MODEL.PRETRAINED = True
 CFG.MODEL.FREEZE_BACKBONE = False
-CFG.MODEL.PATH = ""
+CFG.MODEL.PATH = "best"
 
 # Solver
 CFG.SOLVER = CN()
@@ -117,8 +117,8 @@ CFG.DATASET.IMAGENET9.ROOT_IMAGENET = "/mnt/cephfs/home/gsarridis/datasets/image
 CFG.DATASET.IMAGENET9.ROOT_IMAGENET_BG = "./data/imagenet9"
 CFG.DATASET.IMAGENET9.IMAGE_SIZE = 224
 CFG.DATASET.IMAGENET9.BIAS = "unknown"
-CFG.DATASET.IMAGENET9.BENCHMARK_VAL = "original"  # choices: mixed_rand, mixed_next, mixed_same, no_fg, only_bg_b, only_bg_t, only_fg, original
-CFG.DATASET.IMAGENET9.BENCHMARK_TEST = "mixed_rand"  # choices: mixed_rand, mixed_next, mixed_same, no_fg, only_bg_b, only_bg_t, only_fg, original
+CFG.DATASET.IMAGENET9.BENCHMARK_VAL = "mixed_rand"  # choices: mixed_rand, mixed_next, mixed_same, no_fg, only_bg_b, only_bg_t, only_fg, original
+CFG.DATASET.IMAGENET9.BENCHMARK_TEST = "original"  # choices: mixed_rand, mixed_next, mixed_same, no_fg, only_bg_b, only_bg_t, only_fg, original
 
 
 CFG.DATASET.CIFAR10 = CN()
@@ -170,6 +170,8 @@ CFG.MITIGATOR.MAVIAS.PROJNET.OPTIM.TYPE = "SGD"
 CFG.MITIGATOR.JTT = CN()
 CFG.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS = 50
 CFG.MITIGATOR.JTT.UPWEIGHT = 100
+CFG.MITIGATOR.JTT.BCC_PATH = "add the path here"
+
 # FLAC CFG
 CFG.MITIGATOR.FLAC = CN()
 CFG.MITIGATOR.FLAC.LOSS = CN()
@@ -187,7 +189,7 @@ CFG.MITIGATOR.FLACB.LOSS.CE_WEIGHT = 1.0
 # SOFTCON CFG
 CFG.MITIGATOR.SOFTCON = CN()
 CFG.MITIGATOR.SOFTCON.BCC_PATH = "add the path here"
-CFG.MITIGATOR.SOFTCON.WEIGHT = 0.01
+CFG.MITIGATOR.SOFTCON.WEIGHT = 1000
 
 # BADD CFG
 CFG.MITIGATOR.BADD = CN()
@@ -207,8 +209,3 @@ CFG.MITIGATOR.END = CN()
 CFG.MITIGATOR.END.ALPHA = 1
 CFG.MITIGATOR.END.BETA = 1
 CFG.MITIGATOR.END.WEIGHT = 1
-
-CFG.CLUSTERING = CN()
-CFG.CLUSTERING.DBSCAN = CN()
-CFG.CLUSTERING.DBSCAN.EPS = 1.0
-CFG.CLUSTERING.DBSCAN.MIN_SAMPLES = 5
