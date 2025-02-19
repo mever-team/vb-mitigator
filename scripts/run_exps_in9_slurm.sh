@@ -3,10 +3,10 @@
 #SBATCH -c8
 #SBATCH --mem=12G
 #SBATCH --gres shard:12
-#SBATCH --job-name="mavias-all"
+#SBATCH --job-name="in9-all"
 #SBATCH --output=slurm/slurm_%x_%A_%a.out
 #SBATCH --error=slurm/slurm_%x_%A_%a.err
-#SBATCH --array=0-39              # Number of jobs in array (7 methods × 4 datasets × 5 seeds = 140)
+#SBATCH --array=0-23             # Number of jobs in array (7 methods × 4 datasets × 5 seeds = 140)
 #SBATCH --time=0-60:00:00
 
 
@@ -16,10 +16,12 @@ cd /mnt/cephfs/home/gsarridis/projects/vb-mitigator
 
 conda activate dl310
 
+srun python tools/train.py --cfg configs/celeba/erm/tags.yaml
+
 # Define datasets and methods
 DATASETS=("imagenet9")
 METHODS=("mavias" "debian" "flacb" "jtt" "lff" "sd" "softcon" "erm")
-SEEDS=(0 1 2 3 4)
+SEEDS=(0 1 2)
 
 # Compute indices from SLURM_ARRAY_TASK_ID
 TOTAL_EXPERIMENTS=$(( ${#DATASETS[@]} * ${#METHODS[@]} * ${#SEEDS[@]} ))

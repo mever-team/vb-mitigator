@@ -14,7 +14,7 @@ MITIGATOR:
       CE_WEIGHT: 1.0
 SOLVER:
   BATCH_SIZE: 64
-  EPOCHS: 40
+  EPOCHS: 30
   LR: 0.001
   TYPE: "SGD"
   WEIGHT_DECAY: 1e-4
@@ -23,5 +23,5 @@ SOLVER:
     LR_DECAY_RATE: 0.5
 MODEL:
   TYPE: "resnet50"
-  PRETRAINED: False
+  PRETRAINED: True
 METRIC: "wg_ovr_tags"
