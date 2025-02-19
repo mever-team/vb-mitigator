@@ -56,4 +56,4 @@ echo "GPUs Allocated: $CUDA_VISIBLE_DEVICES"
 echo "Running experiment: Dataset=$DATASET, Method=$METHOD, Seed=$SEED"
 echo "====================================="
 
-srun python tools/train.py --cfg "$CONFIG_PATH" --seed "$SEED"
+srun python tools/train.py --cfg "$CONFIG_PATH" --seed "$SEED" --epoch_steps 5
