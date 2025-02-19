@@ -17,6 +17,7 @@ def wg_ovr_tags(data_dict):
 
     # Initialize storage for group accuracies
     group_accuracies = {}
+    group_samples = {}
 
     # Overall accuracy
     overall_accuracy = (predictions == targets).mean() * 100
@@ -73,7 +74,9 @@ def wg_ovr_tags(data_dict):
 
         # Store accuracies in separate keys
         group_accuracies[f"{class_name}_has_tag"] = acc_with_tag
+        group_samples[f"{class_name}_has_tag_samples"] = total_samples_with_tag
         group_accuracies[f"{class_name}_no_tag"] = acc_without_tag
+        group_samples[f"{class_name}_no_tag_samples"] = total_samples_without_tag
 
     # Compute worst group accuracy and corresponding group key
     worst_group_acc = min(group_accuracies.values())
@@ -84,6 +87,7 @@ def wg_ovr_tags(data_dict):
         **group_accuracies,
         "worst_group_accuracy": worst_group_acc,
         "worst_group": worst_group_key,
+        **group_samples,
     }
 
 
