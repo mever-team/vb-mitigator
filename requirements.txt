@@ -15,3 +15,5 @@ transformers==4.48.2
 wandb==0.18.2
 yacs==0.1.8
 git+https://github.com/xinyu1205/recognize-anything.git
+tensorboard
+fairscale

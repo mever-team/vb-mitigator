@@ -1,3 +1,4 @@
+import sys
 from yacs.config import CfgNode as CN
 from tools.utils import log_msg
 
@@ -25,6 +26,8 @@ CFG.EXPERIMENT.TAG = "vanilla"
 CFG.EXPERIMENT.GPU = "cuda:0"  # or cpu
 CFG.EXPERIMENT.SEED = 1
 CFG.EXPERIMENT.EVAL = False
+CFG.EXPERIMENT.EPOCH_STEPS = sys.maxsize
+CFG.EXPERIMENT.PLACEHOLDER_STEPS = sys.maxsize
 
 # Model
 CFG.MODEL = CN()

@@ -22,6 +22,8 @@ if __name__ == "__main__":
     parser.add_argument("--cfg", type=str, default="")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--eval", action="store_true", help="Enable evaluation mode")
+    parser.add_argument("--epoch_steps", type=int, default=None)
+    parser.add_argument("--placeholder_steps", type=int, default=None)
 
     args = parser.parse_args()
     cfg.merge_from_file(args.cfg)
@@ -30,6 +32,12 @@ if __name__ == "__main__":
         cfg.EXPERIMENT.SEED = args.seed
 
     cfg.EXPERIMENT.EVAL = args.eval
+
+    if args.epoch_steps is not None:
+        cfg.EXPERIMENT.EPOCH_STEPS = args.epoch_steps
+
+    if args.placeholder_steps is not None:
+        cfg.EXPERIMENT.PLACEHOLDER_STEPS = args.placeholder_steps
 
     cfg.freeze()
     main(cfg)
