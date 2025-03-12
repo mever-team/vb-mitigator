@@ -11,6 +11,7 @@ import torch.nn.functional as F
 import numpy as np
 
 
+
 class SupConLoss(nn.Module):
     """Supervised Contrastive Learning: https://arxiv.org/pdf/2004.11362.pdf.
     It also supports the unsupervised contrastive loss in SimCLR"""
@@ -312,3 +313,38 @@ class EnDLoss(nn.Module):
         bias_loss = self.alpha * R_ortho + self.beta * R_parallel
 
         return label_loss, bias_loss
+
+
+
+
+
+def kd_loss(logits_student, logits_teacher, temperature):
+    batch_size = logits_student.shape[0]
+    
+    # Convert targets to one-hot encoding
+    targets_one_hot = F.one_hot(logits_teacher, num_classes=2).float()
+    
+    # Apply soft labels (0.6 for correct class, 0.4 for incorrect class)
+    soft_targets = 0.3 + (0.4 * targets_one_hot)
+
+    log_pred_student = F.log_softmax(logits_student / temperature, dim=1)
+    pred_teacher = F.softmax(soft_targets / temperature, dim=1)
+    loss_kd = F.kl_div(log_pred_student, pred_teacher, reduction="none").sum(1).mean()
+    loss_kd *= temperature**2
+    return loss_kd
+
+
+class SoftLabelLoss(nn.Module):
+    """Distilling the Knowledge in a Neural Network"""
+
+    def __init__(self, temperature=1):
+        super().__init__()
+        self.temperature = temperature
+
+
+    def forward(self, logits, targets, **kwargs):
+        loss_kd =  kd_loss(
+            logits, targets, self.temperature
+        )
+
+        return loss_kd

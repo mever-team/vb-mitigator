@@ -764,15 +764,15 @@ def get_dataset(cfg):
             dataset["dataloaders"]["tag_train"] = tag_train_loader
             dataset["dataloaders"]["tag_test"] = tag_test_loader
     elif dataset_name == "urbancars":
-        if method_name == "groupdro":
-            raise ValueError("not implemented")
-        else:
-            train_loader, train_dataset = get_urbancars_loader(
-                root=cfg.DATASET.URBANCARS.ROOT,
-                batch_size=cfg.SOLVER.BATCH_SIZE,
-                image_size=cfg.DATASET.URBANCARS.IMAGE_SIZE,
-                split="train",
-            )
+        # if method_name == "groupdro":
+        #     raise ValueError("not implemented")
+        # else:
+        train_loader, train_dataset = get_urbancars_loader(
+            root=cfg.DATASET.URBANCARS.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.URBANCARS.IMAGE_SIZE,
+            split="train",
+        )
 
         val_loader, val_dataset = get_urbancars_loader(
             root=cfg.DATASET.URBANCARS.ROOT,

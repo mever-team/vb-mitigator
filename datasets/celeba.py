@@ -78,8 +78,9 @@ class BiasedCelebASplit:
         else:
             raise AttributeError
 
-        if split in ["train", "train_valid"]:
-            save_path = Path(f"../clusters/celeba_rand_indices_{target_attr}.pkl")
+        if split in ["train", "train_valid"]: 
+            save_path = Path(os.path.join(root, f"clusters/celeba_rand_indices_{target_attr}.pkl"))
+            print(save_path.resolve())
             if not save_path.exists():
                 rand_indices = torch.randperm(len(self.indices))
                 pickle.dump(rand_indices, open(save_path, "wb"))
@@ -108,9 +109,9 @@ class BiasedCelebASplit:
             num_classes=2, targets=self.targets, biases=self.biases
         )
 
-        # print(
-        #     f"Use BiasedCelebASplit \n target_attr: {target_attr} split: {split} \n {self.confusion_matrix_org}"
-        # )
+        print(
+            f"Use BiasedCelebASplit \n target_attr: {target_attr} split: {split} \n {self.confusion_matrix_org}"
+        )
 
     def build_blonde(self):
         biases = self.celeba.attr[:, self.bias_idx]

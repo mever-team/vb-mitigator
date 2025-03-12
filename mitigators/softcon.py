@@ -122,7 +122,7 @@ class SoftConTrainer(BaseTrainer):
             pretrained=self.cfg.MODEL.PRETRAINED,
         )
         self.model.to(self.device)
-
+        
         bcc_net_dict = get_local_model_dict(self.cfg.MITIGATOR.SOFTCON.BCC_PATH)
         self.bcc_net = get_model(
             self.cfg.MODEL.TYPE,
@@ -161,7 +161,7 @@ class SoftConTrainer(BaseTrainer):
             dim=0,
         )
         cont_features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
-        ce_loss, con_loss = self.criterion(
+        ce_loss, con_loss = self.criterion_train(
             outputs, targets, cont_features, cont_labels, cont_bias_feats
         )
 
@@ -325,4 +325,5 @@ class SoftConTrainer(BaseTrainer):
         self.create_cont_dataloader()
 
     def _setup_criterion(self):
-        self.criterion = UnsupBiasContrastiveLoss()
+        super()._setup_criterion()
+        self.criterion_train = UnsupBiasContrastiveLoss()

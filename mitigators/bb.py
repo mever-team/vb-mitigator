@@ -12,24 +12,33 @@ class BBTrainer(BaseTrainer):
         # Example inputs
         all_targets = []
         all_biases = []
+        all_biases2 = []
 
-        if len(self.biases) > 1:
-            raise ValueError("BB can be applied only for single attribute biases.")
+        if len(self.biases) > 2:
+            raise ValueError("not implemented")
 
         for data in self.dataloaders["train"]:
 
             # Collect targets
             all_targets.append(data["targets"])
             all_biases.append(data[self.biases[0]])
+            if len(self.biases)>1:
+                all_biases2.append(data[self.biases[1]])
 
         # Concatenate all collected data
         all_targets = torch.cat(all_targets, dim=0)
         all_biases = torch.cat(all_biases, dim=0)
+        if len(self.biases)>1:
+            all_biases2 = torch.cat(all_biases2, dim=0)
 
         # Step 2: Compute the confusion matrix
         conf_matrix = confusion_matrix(all_targets, all_biases)
+        if len(self.biases)>1:
+            conf_matrix2 = confusion_matrix(all_targets, all_biases2)
         # print(conf_matrix)
         self.criterion_train = BBLoss(torch.tensor(conf_matrix))
+        if len(self.biases)>1:
+            self.criterion_train2 = BBLoss(torch.tensor(conf_matrix2))
 
     def _train_iter(self, batch):
         inputs = batch["inputs"].to(self.device)
@@ -41,6 +50,8 @@ class BBTrainer(BaseTrainer):
         if isinstance(outputs, tuple):
             outputs, _ = outputs
         loss = self.criterion_train(outputs, targets, biases)
+        if len(self.biases)>1:
+            loss += self.criterion_train2(outputs, targets, biases)
         self._loss_backward(loss)
         self._optimizer_step()
         return {"train_cls_loss": loss}

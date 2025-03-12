@@ -25,7 +25,7 @@ class DomainIndependentTrainer(BaseTrainer):
     
     def _setup_models(self):
         self.model = DomainIndependentClassifier(
-            self.cfg.MODEL.TYPE, self.num_class, self.num_biases,
+            self.cfg.MODEL.TYPE, self.num_class, self.num_biases, self.cfg.MODEL.PRETRAINED,
         ).to(self.device)
 
     
@@ -35,8 +35,10 @@ class DomainIndependentTrainer(BaseTrainer):
         if len(self.biases) == 1:
             domain_label = batch[self.biases[0]].to(self.device)
         else:
-            raise NotImplementedError(f"You should define the domain labels based on multiple bias types.")
-
+            domain_label = targets * 0
+            for i, bias in enumerate(self.biases):
+                domain_label += batch[bias] * (i + 1)
+            domain_label = domain_label.to(self.device)
 
         self.optimizer.zero_grad()
         logits_per_domain = self.model(inputs)

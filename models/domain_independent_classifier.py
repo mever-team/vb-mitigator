@@ -3,11 +3,12 @@ import torch
 from torch import nn
 
 class DomainIndependentClassifier(nn.Module):
-    def __init__(self, arch, num_classes, num_domain):
+    def __init__(self, arch, num_classes, num_domain, pretrained):
         super(DomainIndependentClassifier, self).__init__()
         self.backbone = get_model(
             arch,
             num_classes,
+            pretrained=pretrained
         )
         self.domain_classifier_list = nn.ModuleList(
             [

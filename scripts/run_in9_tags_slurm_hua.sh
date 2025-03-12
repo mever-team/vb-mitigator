@@ -6,7 +6,7 @@
 #SBATCH --job-name="in9-tags"
 #SBATCH --output=slurm/slurm_%x_%A_%a.out
 #SBATCH --error=slurm/slurm_%x_%A_%a.err
-#SBATCH --array=0-5    # 1 methods × 1 seeds × 6 runs 
+#SBATCH --array=0-5%1    # 1 methods × 1 seeds × 6 runs 
 #SBATCH --time=03:00:00  # 3-hour slots
 
 
@@ -14,11 +14,12 @@
 export PYTHONPATH="/home/isarridis/projects/vb-mitigator/"
 cd /home/isarridis/projects/vb-mitigator
 
+source /home/isarridis/anaconda3/etc/profile.d/conda.sh
 conda activate dl310
 
 # Define datasets and methods
 DATASETS=("imagenet9")
-METHODS=("erm_tags")
+METHODS=("erm")
 SEEDS=(1)
 STEPS=6
 
@@ -41,12 +42,7 @@ METHOD=${METHODS[$METHOD_IDX]}
 SEED=${SEEDS[$SEED_IDX]}
 
 # Set config file path
-if [ "$DATASET" == "celeba" ]; then
-    CONFIG_PATH="configs/$DATASET/$METHOD/blonde.yaml"
-else
-    CONFIG_PATH="configs/$DATASET/$METHOD/dev.yaml"
-fi
-
+CONFIG_PATH="configs/$DATASET/$METHOD/tags.yaml"
 # Log system info
 echo "====================================="
 echo "SLURM Job ID: $SLURM_JOB_ID"

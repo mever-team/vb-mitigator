@@ -1,0 +1,31 @@
+EXPERIMENT:
+  NAME: "flacb"
+  TAG: "bench"
+  PROJECT: "celeba_baselines"
+DATASET:
+  TYPE: "celeba"
+  BIASES: ["gender"]
+  CELEBA:
+    BIAS: "gender"
+    TARGET: "blonde"
+MITIGATOR:
+  TYPE: "flacb"
+  FLACB:
+    BCC_PATH: "./output/celeba_baselines/bench/erm/best"
+    LOSS:
+      ALPHA: 30000.0
+      CE_WEIGHT: 0.01
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 10
+  LR: 0.001
+  TYPE: "Adam"
+  WEIGHT_DECAY: 1e-4
+  SCHEDULER:
+    LR_DECAY_STAGES: [3, 6]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet18"
+  PRETRAINED: True
+  FREEZE_BACKBONE: False
+METRIC: "wg_ovr"

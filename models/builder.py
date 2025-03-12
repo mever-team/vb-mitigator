@@ -78,6 +78,14 @@ def get_bcc(cfg, num_class):
             model = models_dict["resnet18"](num_class)
             model.load_state_dict(model_dict["model"])
             models[bias_name] = model
+        elif dataset_name == "urbancars" and (bias_name == "background"):
+            model = models_dict["resnet50"](num_class)
+            model.load_state_dict(model_dict["model"])
+            models[bias_name] = model
+        elif dataset_name == "urbancars" and (bias_name == "object"):
+            model = models_dict["resnet50"](num_class)
+            model.load_state_dict(model_dict["model"])
+            models[bias_name] = model
         else:
             raise ValueError(
                 f"Unsupported dataset ({dataset_name}) or bias ({bias_name}) type."

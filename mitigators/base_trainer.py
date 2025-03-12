@@ -20,7 +20,7 @@ from tools.utils import (
 )
 from configs.cfg import show_cfg
 from ram.models import ram_plus
-
+import mitigators.losses as losses
 
 class BaseTrainer:
     """
@@ -146,6 +146,8 @@ class BaseTrainer:
     def _setup_criterion(self):
         if self.cfg.SOLVER.CRITERION == "CE":
             self.criterion = torch.nn.CrossEntropyLoss()
+        elif self.cfg.SOLVER.CRITERION == "soft_targets":
+            self.criterion = losses.SoftLabelLoss()
         else:
             raise ValueError(f"Unsupported criterion type: {self.cfg.SOLVER.CRITERION}")
 
@@ -484,7 +486,7 @@ class BaseTrainer:
         self.log_path = os.path.join(self.cfg.LOG.PREFIX, experiment_name)
         if not os.path.exists(self.log_path):
             os.makedirs(self.log_path)
-        self.logger = setup_logger(os.path.join(self.log_path, "out.log"))
+        self.logger = setup_logger(os.path.join(self.log_path, f"out{self.cfg.EXPERIMENT.SEED}.log"))
         if self.cfg.LOG.WANDB:
             try:
                 import wandb
@@ -527,7 +529,7 @@ class BaseTrainer:
         # worklog.txt
         # Write to out.log with keys as columns
 
-        log_file_path = os.path.join(self.log_path, "out.log")
+        log_file_path = os.path.join(self.log_path, f"out{self.cfg.EXPERIMENT.SEED}.log")
         log_keys = ["epoch", "lr"] + list(log_dict.keys())
         column_width = (
             max(len(key) for key in log_keys) + 2
@@ -555,7 +557,7 @@ class BaseTrainer:
             writer.write(row + os.linesep)
 
         # Optional: Write to CSV for visualization
-        csv_file_path = os.path.join(self.log_path, "logs.csv")
+        csv_file_path = os.path.join(self.log_path, f"logs{self.cfg.EXPERIMENT.SEED}.csv")
         if not os.path.exists(csv_file_path):
             with open(csv_file_path, "w", encoding="utf-8") as csv_file:
                 csv_file.write(",".join(log_keys) + os.linesep)
@@ -612,7 +614,7 @@ class BaseTrainer:
         )
 
     def train(self):
-        start_epoch = self.current_epoch
+        start_epoch = self.current_epoch + 1
         for epoch in range(
             start_epoch,
             min(start_epoch + self.cfg.EXPERIMENT.EPOCH_STEPS, self.cfg.SOLVER.EPOCHS),

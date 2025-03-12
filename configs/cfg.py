@@ -40,7 +40,7 @@ CFG.MODEL.PATH = "best"
 CFG.SOLVER = CN()
 CFG.SOLVER.BATCH_SIZE = 64
 CFG.SOLVER.EPOCHS = 240
-CFG.SOLVER.LR = 0.05
+CFG.SOLVER.LR = 0.001
 CFG.SOLVER.WEIGHT_DECAY = 0.0001
 CFG.SOLVER.MOMENTUM = 0.9
 CFG.SOLVER.TYPE = "SGD"
@@ -116,7 +116,7 @@ CFG.DATASET.CELEBA.IMAGE_SIZE = 224
 CFG.DATASET.CELEBA.BIAS_ALIGNED = [(0, 0), (1, 1)]
 
 CFG.DATASET.IMAGENET9 = CN()
-CFG.DATASET.IMAGENET9.ROOT_IMAGENET = "/mnt/cephfs/home/gsarridis/datasets/imagenet/"  # you should manually download ImageNet and define the root directory here.
+CFG.DATASET.IMAGENET9.ROOT_IMAGENET = "/home/isarridis/datasets/imagenet/"  # you should manually download ImageNet and define the root directory here.
 CFG.DATASET.IMAGENET9.ROOT_IMAGENET_BG = "./data/imagenet9"
 CFG.DATASET.IMAGENET9.IMAGE_SIZE = 224
 CFG.DATASET.IMAGENET9.BIAS = "unknown"

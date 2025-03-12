@@ -146,7 +146,7 @@ def get_waterbirds(
         )
     transform_train = transform
     if transform_train is None:
-        transform_train = transforms.Compose(
+        transform_train =   transforms.Compose(
             [
                 transforms.RandomResizedCrop(
                     target_resolution,
@@ -159,6 +159,20 @@ def get_waterbirds(
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             ]
         )
+        # transforms.Compose(
+        #     [
+        #         transforms.Resize(
+        #             (
+        #                 int(target_resolution[0] * scale),
+        #                 int(target_resolution[1] * scale),
+        #             )
+        #         ),
+        #         transforms.CenterCrop(target_resolution),
+        #         transforms.ToTensor(),
+        #         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        #     ] 
+        # )
+
     if split == "train":
         train_dataset = WaterbirdsDataset(
             raw_data_path=root_dir,

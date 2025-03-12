@@ -1,5 +1,6 @@
 # Based on the implementation provided by https://github.com/facebookresearch/Whac-A-Mole/blob/main/urbancars_trainers/jtt.py
 
+import os
 from .base_trainer import BaseTrainer
 import torch
 from torch.utils.data import Subset, ConcatDataset
@@ -18,16 +19,25 @@ class JTTTrainer(BaseTrainer):
             momentum=cfg.SOLVER.MOMENTUM,
             weight_decay=cfg.SOLVER.WEIGHT_DECAY,
         )
+        MODEL_SAVE_PATH = os.path.join(self.log_path, "bias_discovery_model")
         if cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS == 0:
             self.model = get_local_model_dict(self.cfg.MITIGATOR.JTT.BCC_PATH)
             print(
                 f"loaded vinilla model as bias discovery model ({cfg.MITIGATOR.JTT.BCC_PATH})"
             )
+        elif os.path.exists(MODEL_SAVE_PATH):
+            print("Loading pre-trained bias detection model...")
+            self.model.load_state_dict(torch.load(MODEL_SAVE_PATH, map_location=self.device))
+            self.model.to(self.device)
         else:
             print(
                 f"training for {cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS} epoch(s) to detect the biases."
             )
-            for _ in range(cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS):
+            for epoch in range(cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS):
+                total_loss = 0.0
+                correct = 0
+                total = 0
+
                 for batch in self.dataloaders["train"]:
                     inputs = batch["inputs"].to(self.device)
                     targets = batch["targets"].to(self.device)
@@ -35,12 +45,31 @@ class JTTTrainer(BaseTrainer):
                     outputs = self.model(inputs)
                     if isinstance(outputs, tuple):
                         outputs, _ = outputs
+                    
                     loss = self.criterion(outputs, targets)
 
+                    # Backpropagation
                     self._loss_backward(loss)
                     erm_id_optimizer.step()
                     erm_id_optimizer.zero_grad(set_to_none=True)
 
+                    # Track loss
+                    total_loss += loss.item()
+
+                    # Track accuracy
+                    predicted = outputs.argmax(dim=1)  # Assuming classification task
+                    correct += (predicted == targets).sum().item()
+                    total += targets.size(0)
+
+                avg_loss = total_loss / len(self.dataloaders["train"])
+                accuracy = correct / total * 100 if total > 0 else 0
+
+                print(f"Epoch [{epoch+1}/{cfg.MITIGATOR.JTT.BIAS_DISCOVERY_EPOCHS}] - Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}%")
+
+
+            os.makedirs("saved_models", exist_ok=True)
+            torch.save(self.model.state_dict(), MODEL_SAVE_PATH)
+            print(f"Model saved at {MODEL_SAVE_PATH}")
         self.model.eval()
 
         error_set_list = []
@@ -74,7 +103,7 @@ class JTTTrainer(BaseTrainer):
         train_loader = torch.utils.data.DataLoader(
             concat_train_set,
             batch_size=cfg.SOLVER.BATCH_SIZE,
-            shuffle=False,  # no shuffle for inferring error set
+            shuffle=True,  # no shuffle for inferring error set
             num_workers=cfg.DATASET.NUM_WORKERS,
             pin_memory=True,
             persistent_workers=cfg.DATASET.NUM_WORKERS > 0,
