@@ -11,7 +11,7 @@ DATASET:
 MITIGATOR:
   TYPE: "badd"
   BADD:
-    M: 10
+    M: 1.0
 SOLVER:
   BATCH_SIZE: 128
   EPOCHS: 10

@@ -78,8 +78,10 @@ class BiasedCelebASplit:
         else:
             raise AttributeError
 
-        if split in ["train", "train_valid"]: 
-            save_path = Path(os.path.join(root, f"clusters/celeba_rand_indices_{target_attr}.pkl"))
+        if split in ["train", "train_valid"]:
+            save_path = Path(
+                os.path.join(root, f"clusters/celeba_rand_indices_{target_attr}.pkl")
+            )
             print(save_path.resolve())
             if not save_path.exists():
                 rand_indices = torch.randperm(len(self.indices))
@@ -138,7 +140,7 @@ def get_celeba(
     target_attr="blonde",
     split="train",
     num_workers=8,
-    aug=True,
+    aug=False,
     two_crop=False,
     ratio=0,
     img_size=224,

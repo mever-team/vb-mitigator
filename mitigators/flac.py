@@ -83,7 +83,7 @@ class FLACTrainer(BaseTrainer):
         inputs = batch["inputs"].to(self.device)
         targets = batch["targets"].to(self.device)
         loss_flac = 0
-        
+
         outputs = self.model(inputs)
         if not isinstance(outputs, tuple):
             raise ValueError("Model output must be a tuple (logits, features)")
@@ -95,8 +95,10 @@ class FLACTrainer(BaseTrainer):
             loss_flac += self.cfg.MITIGATOR.FLAC.LOSS.ALPHA * flac_loss(
                 pr_feat, features, targets, self.cfg.MITIGATOR.FLAC.LOSS.DELTA
             )
-        loss_cl = self.criterion(outputs, targets)
-        loss = self.cfg.MITIGATOR.FLAC.LOSS.CE_WEIGHT * loss_cl + loss_flac
+        loss_cl = self.cfg.MITIGATOR.FLAC.LOSS.CE_WEIGHT * self.criterion(
+            outputs, targets
+        )
+        loss = loss_cl + loss_flac
         self.optimizer.zero_grad()
         self._loss_backward(loss)
         self._optimizer_step()
