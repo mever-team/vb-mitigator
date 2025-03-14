@@ -146,8 +146,10 @@ def download_celeba_zip(root):
     os.makedirs(root, exist_ok=True)
     try:
         # Download the data file from Google Drive
-        gdown.download(data_url, download_path, quiet=False)
-        print(f"Downloaded data to {download_path}.")
+        print(download_path)
+        if not os.path.isfile(download_path):
+            gdown.download(data_url, download_path, quiet=False)
+            print(f"Downloaded data to {download_path}.")
 
         # Extract the dataset
         print(f"Extracting CelebA dataset images to {extract_path}...")

@@ -1,0 +1,1 @@
+python tools/train.py --cfg configs/celeba/erm/tags.yaml

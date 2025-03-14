@@ -9,10 +9,15 @@ from .spectral_decouple import SpectralDecoupleTrainer
 from .lff import LfFTrainer
 from .bb import BBTrainer
 from .end import EndTrainer
+from .erm_tags import ERMTagsTrainer
+from .flacb import FLACBTrainer
+from .jtt import JTTTrainer
+from .softcon import SoftConTrainer
 
 method_to_trainer = {
     "erm": ERMTrainer,
     "flac": FLACTrainer,
+    "flacb": FLACBTrainer,
     "badd": BAddTrainer,
     "mavias": MAVIASTrainer,
     "groupdro": GroupDROTrainer,
@@ -22,4 +27,7 @@ method_to_trainer = {
     "lff": LfFTrainer,
     "bb": BBTrainer,
     "end": EndTrainer,
+    "erm_tags": ERMTagsTrainer,
+    "jtt": JTTTrainer,
+    "softcon": SoftConTrainer
 }

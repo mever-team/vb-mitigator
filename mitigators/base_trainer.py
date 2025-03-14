@@ -1,4 +1,9 @@
+import ast
 import os
+
+import pandas as pd
+
+from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import torch
@@ -6,8 +11,16 @@ from datasets.builder import get_dataset
 from models.builder import get_model
 from tools.metrics import metrics_dicts, get_performance
 from tools.metrics.utils import AverageMeter
-from tools.utils import log_msg, save_checkpoint, load_checkpoint, setup_logger
+from tools.utils import (
+    log_msg,
+    save_checkpoint,
+    load_checkpoint,
+    seed_everything,
+    setup_logger,
+)
 from configs.cfg import show_cfg
+from ram.models import ram_plus
+import mitigators.losses as losses
 
 
 class BaseTrainer:
@@ -62,6 +75,7 @@ class BaseTrainer:
     """
 
     def __init__(self, cfg):
+        seed_everything(cfg.EXPERIMENT.SEED)
         self.cfg = cfg
         self._setup_logger()
         self.device = self._setup_device()
@@ -72,8 +86,19 @@ class BaseTrainer:
         self._setup_optimizer()
         self._setup_scheduler()
         self._metric_specific_setups()
+        self._basic_eval_setups()
         self._method_specific_setups()
+        self._setup_resume()
         show_cfg(cfg, self.logger)
+
+    def _setup_resume(self):
+        current_checkpoint = os.path.join(
+            self.log_path, f"current_{self.cfg.EXPERIMENT.SEED}"
+        )
+
+        if os.path.exists(current_checkpoint):
+            print(f"Resuming model from {current_checkpoint}")
+            self.load_checkpoint(f"current_{self.cfg.EXPERIMENT.SEED}")
 
     def _setup_device(self):
         return torch.device(
@@ -96,21 +121,23 @@ class BaseTrainer:
         self.num_class = dataset["num_class"]
         self.biases = dataset["biases"]
         self.dataloaders = dataset["dataloaders"]
+        self.sets = dataset["sets"]
         self.data_root = dataset["root"]
         self.target2name = dataset["target2name"]
         self.ba_groups = dataset["ba_groups"] if "ba_groups" in dataset else None
 
     def _setup_optimizer(self):
+        parameters = [p for p in self.model.parameters() if p.requires_grad]
         if self.cfg.SOLVER.TYPE == "SGD":
             self.optimizer = torch.optim.SGD(
-                self.model.parameters(),
+                parameters,
                 lr=self.cfg.SOLVER.LR,
                 momentum=self.cfg.SOLVER.MOMENTUM,
                 weight_decay=self.cfg.SOLVER.WEIGHT_DECAY,
             )
         elif self.cfg.SOLVER.TYPE == "Adam":
             self.optimizer = torch.optim.Adam(
-                self.model.parameters(),
+                parameters,
                 lr=self.cfg.SOLVER.LR,
                 weight_decay=self.cfg.SOLVER.WEIGHT_DECAY,
             )
@@ -120,6 +147,8 @@ class BaseTrainer:
     def _setup_criterion(self):
         if self.cfg.SOLVER.CRITERION == "CE":
             self.criterion = torch.nn.CrossEntropyLoss()
+        elif self.cfg.SOLVER.CRITERION == "soft_targets":
+            self.criterion = losses.SoftLabelLoss()
         else:
             raise ValueError(f"Unsupported criterion type: {self.cfg.SOLVER.CRITERION}")
 
@@ -223,8 +252,216 @@ class BaseTrainer:
             performance["loss"] = np.mean(losses)
         return performance
 
+    def _val_iter_tags(self, batch):
+        batch_dict = {}
+
+        inputs = batch["inputs"].to(self.device)
+        targets = batch["targets"]
+        indices = batch["index"]
+
+        tags_dict = {}  # zeros with shape of targets
+        tags_dict = {
+            f"{row['Class']}_{row['Tag']}": torch.zeros_like(targets)
+            for _, row in self.overperforming_tags_df.iterrows()
+        }
+
+        outputs = self.model(inputs)
+        if isinstance(outputs, tuple):
+            outputs, _ = outputs
+        batch_dict["predictions"] = torch.argmax(outputs, dim=1)
+        batch_dict["targets"] = targets
+
+        for i in range(len(indices)):
+            class_name = self.target2name[targets[i].item()]
+            irrelevant_tags = self.index_to_tags_test[indices[i].item()]
+            irrelevant_tags = [tag.strip() for tag in irrelevant_tags.split(", ")]
+
+            for tag in irrelevant_tags:
+                if f"{class_name}_{tag}" in tags_dict:
+                    tags_dict[f"{class_name}_{tag}"][i] = 1
+
+        batch_dict.update(tags_dict)
+
+        return batch_dict
+
+    def _validate_epoch_tags(self, stage="val"):
+        self._set_eval()
+        with torch.no_grad():
+
+            all_data = {
+                f"{row['Class']}_{row['Tag']}": []
+                for _, row in self.overperforming_tags_df.iterrows()
+            }
+
+            all_data["targets"] = []
+            all_data["predictions"] = []
+
+            for batch in self.dataloaders[stage]:
+                batch_dict = self._val_iter_tags(batch)
+                for key, value in batch_dict.items():
+                    all_data[key].append(value.detach().cpu().numpy())
+
+            for key in all_data:
+                all_data[key] = np.concatenate(all_data[key])
+            # metric specific data
+
+            performance = get_performance[self.cfg.METRIC_TAGS](all_data)
+        return performance
+
     def _method_specific_setups(self):
         pass
+
+    def _basic_eval_setups(self):
+        if self.cfg.METRIC == "wg_ovr_tags":
+            self.tags_df_test = self.get_ram_tags(split="test")
+            self.get_relevant_tags()
+            self.tags_df_test = self.get_irrelevant_tags(
+                self.tags_df_test, split="test"
+            )
+            self.index_to_tags_test = {
+                row["index"]: (
+                    row["irrelevant_tags"].replace(" | ", ", ")
+                    if isinstance(row["irrelevant_tags"], str)
+                    else " "
+                )
+                for _, row in self.tags_df_test.iterrows()
+            }
+            overperforming_tags_path = os.path.join(
+                self.data_root, "overperforming_tags.csv"
+            )
+            if not os.path.exists(overperforming_tags_path):
+                raise FileNotFoundError(
+                    "File 'overperforming_tags.csv' not found. You should first train a vanilla model to calculate the overperforming tags."
+                )
+            # Load the DataFrame if the file exists
+            print(f"Loading overperforming tags from {overperforming_tags_path}")
+            self.overperforming_tags_df = pd.read_csv(overperforming_tags_path)
+        return
+
+    def get_irrelevant_tags(self, df, split="train"):
+        def calc_irrelevant_tags(row):
+            tags = str(row["tags"]) if isinstance(row["tags"], str) else ""
+            all_tags = set(tag.strip() for tag in tags.split(" | "))
+            relevant = set(self.relevant_tags.get(row["target"], []))
+            return " | ".join(all_tags - relevant)
+
+        df["irrelevant_tags"] = df.apply(calc_irrelevant_tags, axis=1)
+        # save to csv
+        df.to_csv(os.path.join(self.data_root, f"{split}_tags.csv"), index=False)
+        return df
+
+    def get_relevant_tags(self):
+        batch_size = self.cfg.MITIGATOR.MAVIAS.LLM.BATCH_SIZE
+
+        # Open the CSV file and read the tags
+        unique_tags_df = pd.read_csv(
+            os.path.join(self.data_root, "unique_tags_per_class.csv")
+        )
+
+        unique_tags_df["tags"] = unique_tags_df["tags"].apply(ast.literal_eval)
+
+        self.relevant_tags = {}
+        for target in unique_tags_df["class"]:
+            path_to_check = os.path.join(
+                self.data_root,
+                "relevant_tags",
+                f"{self.cfg.MITIGATOR.MAVIAS.LLM.TYPE}_bs{batch_size}_{target}_{self.target2name[target]}.csv",
+            )
+            # if path existis
+            if not os.path.exists(path_to_check):
+                raise FileNotFoundError(
+                    "Relevant tags not found. You should first run MAVias to calculate the relevant tags."
+                )
+            else:
+                print(f"Loading relevant tags from {path_to_check}")
+                self.relevant_tags[target] = pd.read_csv(path_to_check)["tags"].tolist()
+
+    def get_ram_tags(self, split="train"):
+
+        device = self.device
+        data_loader = self.dataloaders[f"tag_{split}"]
+        outdir = self.data_root
+        # Check if the file exists
+        p = os.path.join(outdir, f"{split}_tags.csv")
+        if os.path.isfile(os.path.join(outdir, f"{split}_tags.csv")):
+            print(f"Loading tags from {p}")
+            # Load the tags from the CSV file
+            split_tags_df = pd.read_csv(os.path.join(outdir, f"{split}_tags.csv"))
+        else:
+            print(f"Extracting tags and saving to {p}")
+            #######load model
+            model = ram_plus(
+                # pretrained="https://huggingface.co/xinyu1205/recognize-anything-plus-model/resolve/main/ram_plus_swin_large_14m.pth",
+                pretrained="./pretrained/ram_plus_swin_large_14m.pth",
+                image_size=self.cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE,
+                vit="swin_l",
+            )
+            model.eval()
+
+            model = model.to(device)
+
+            # Initialize a dictionary to store unique tags for each class
+            unique_tags_per_class = {}
+
+            # Loop through batches
+            for i, batch in enumerate(tqdm(data_loader)):
+                # Initialize an empty list to store tags
+                tag_list = []
+                index_list = []
+                target_list = []
+
+                images = batch["inputs"].to(self.device)
+                labels = batch["targets"]
+                indices = batch["index"]
+
+                with torch.no_grad():
+                    tags, _ = model.generate_tag(images)
+
+                # Iterate over tags and labels
+                for tag_uni, label in zip(tags, labels):
+                    label = label.item()  # Convert tensor to scalar
+                    if label not in unique_tags_per_class:
+                        unique_tags_per_class[label] = set()
+                    for tag in tag_uni.split(" | "):
+                        if tag != "":
+                            unique_tags_per_class[label].update([tag])
+                # Append tags to the tag_list
+                tag_list.extend(tags)
+                index_list.extend(indices.detach().cpu().numpy())
+                target_list.extend(labels.detach().cpu().numpy())
+                # Convert indices to numpy array and extend the list
+
+                # Write tags to file after every batch
+                tag_df = pd.DataFrame(
+                    {"index": index_list, "target": target_list, "tags": tag_list}
+                )
+                # Append to file in each iteration
+                if i == 0:
+                    tag_df.to_csv(
+                        os.path.join(outdir, f"{split}_tags.csv"), index=False
+                    )
+                else:
+                    tag_df.to_csv(
+                        os.path.join(outdir, f"{split}_tags.csv"),
+                        mode="a",
+                        index=False,
+                        header=False,
+                    )
+            split_tags_df = pd.read_csv(os.path.join(outdir, f"{split}_tags.csv"))
+
+            if split == "train":
+                # Convert sets to lists and save unique tags per class to CSV
+                unique_tags_df = pd.DataFrame(
+                    [
+                        (label, list(tags))
+                        for label, tags in unique_tags_per_class.items()
+                    ],
+                    columns=["class", "tags"],
+                )
+                unique_tags_df.to_csv(
+                    os.path.join(outdir, "unique_tags_per_class.csv"), index=False
+                )
+        return split_tags_df
 
     def _setup_models(self):
         self.model = get_model(
@@ -232,6 +469,12 @@ class BaseTrainer:
             self.num_class,
             pretrained=self.cfg.MODEL.PRETRAINED,
         )
+        if self.cfg.MODEL.FREEZE_BACKBONE:
+            for param in self.model.parameters():
+                param.requires_grad = False
+            for param in self.model.fc.parameters():
+                param.requires_grad = True
+
         self.model.to(self.device)
 
     def _setup_logger(self):
@@ -244,7 +487,9 @@ class BaseTrainer:
         self.log_path = os.path.join(self.cfg.LOG.PREFIX, experiment_name)
         if not os.path.exists(self.log_path):
             os.makedirs(self.log_path)
-        self.logger = setup_logger(os.path.join(self.log_path, "out.log"))
+        self.logger = setup_logger(
+            os.path.join(self.log_path, f"out{self.cfg.EXPERIMENT.SEED}.log")
+        )
         if self.cfg.LOG.WANDB:
             try:
                 import wandb
@@ -270,7 +515,10 @@ class BaseTrainer:
     def _log_epoch(self, log_dict, update_cpkt):
         # tensorboard log
         for k, v in log_dict.items():
-            self.tf_writer.add_scalar(k, v, self.current_epoch)
+            if isinstance(v, (int, float)):  # Log only numerical values
+                self.tf_writer.add_scalar(k, v, self.current_epoch)
+            # else:
+            #     print(f"Skipping {k}: Value is not a number ({v})")  # Optional: Debugging message
         self.tf_writer.flush()
         # wandb log
         if self.cfg.LOG.WANDB:
@@ -284,7 +532,9 @@ class BaseTrainer:
         # worklog.txt
         # Write to out.log with keys as columns
 
-        log_file_path = os.path.join(self.log_path, "out.log")
+        log_file_path = os.path.join(
+            self.log_path, f"out{self.cfg.EXPERIMENT.SEED}.log"
+        )
         log_keys = ["epoch", "lr"] + list(log_dict.keys())
         column_width = (
             max(len(key) for key in log_keys) + 2
@@ -300,13 +550,21 @@ class BaseTrainer:
         with open(log_file_path, "a", encoding="utf-8") as writer:
             # Row data
             row = f"{self.current_epoch:<{column_width}}{self.current_lr:<{column_width}.6f}"
-            row += "".join(
-                f"{log_dict[key]:<{column_width}.4f}" for key in log_dict.keys()
-            )
+            # row += "".join(
+            #     f"{log_dict[key]:<{column_width}.4f}" for key in log_dict.keys()
+            # )
+            for key in log_dict.keys():
+                value = log_dict[key]
+                if isinstance(value, (int, float)):  # Format numbers
+                    row += f"{value:<{column_width}.4f}"
+                else:  # Format strings and other non-numeric values
+                    row += f"{str(value):<{column_width}}"
             writer.write(row + os.linesep)
 
         # Optional: Write to CSV for visualization
-        csv_file_path = os.path.join(self.log_path, "logs.csv")
+        csv_file_path = os.path.join(
+            self.log_path, f"logs{self.cfg.EXPERIMENT.SEED}.csv"
+        )
         if not os.path.exists(csv_file_path):
             with open(csv_file_path, "w", encoding="utf-8") as csv_file:
                 csv_file.write(",".join(log_keys) + os.linesep)
@@ -363,24 +621,40 @@ class BaseTrainer:
         )
 
     def train(self):
-        for epoch in range(self.cfg.SOLVER.EPOCHS):
+        start_epoch = self.current_epoch + 1
+        for epoch in range(
+            start_epoch,
+            min(start_epoch + self.cfg.EXPERIMENT.EPOCH_STEPS, self.cfg.SOLVER.EPOCHS),
+        ):
             self.current_epoch = epoch
             log_dict = self._train_epoch()
             # log_dict = {}
             if self.cfg.LOG.TRAIN_PERFORMANCE:
+                if self.cfg.METRIC == "wg_ovr_tags":
+                    raise ValueError(
+                        f"the self.cfg.LOG.TRAIN_PERFORMANCE should be False for wg_ovr_tags metric, you gave {self.cfg.LOG.TRAIN_PERFORMANCE}"
+                    )
                 train_performance = self._validate_epoch(stage="train")
                 train_log_dict = self.build_log_dict(train_performance, stage="train")
                 log_dict.update(train_log_dict)
             if self.cfg.LOG.SAVE_CRITERION == "val":
+                if self.cfg.METRIC == "wg_ovr_tags":
+                    raise ValueError(
+                        f"the self.cfg.LOG.SAVE_CRITERION should be test for wg_ovr_tags metric, you gave {self.cfg.LOG.SAVE_CRITERION}"
+                    )
                 val_performance = self._validate_epoch(stage="val")
                 val_log_dict = self.build_log_dict(val_performance, stage="val")
                 log_dict.update(val_log_dict)
-            test_performance = self._validate_epoch(stage="test")
+            if self.cfg.METRIC == "wg_ovr_tags":
+                test_performance = self._validate_epoch_tags(stage="test")
+            else:
+                test_performance = self._validate_epoch(stage="test")
             test_log_dict = self.build_log_dict(test_performance, stage="test")
             log_dict.update(test_log_dict)
             update_cpkt = self._update_best(log_dict)
             if update_cpkt:
                 self._save_checkpoint(tag="best")
+            self._save_checkpoint(tag=f"current_{self.cfg.EXPERIMENT.SEED}")
             self._log_epoch(log_dict, update_cpkt)
         self._save_checkpoint(tag="latest")
 

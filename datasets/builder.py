@@ -1,6 +1,7 @@
 from datasets.celeba import get_celeba
 from datasets.cifar100 import get_cifar100_loaders
 from datasets.imagenet9 import get_background_challenge_data, get_imagenet9l
+from datasets.urbancars import get_urbancars_loader
 from .biased_mnist import get_color_mnist
 from .fb_biased_mnist import get_color_mnist as get_fb_color_mnist
 from ram import get_transform
@@ -14,10 +15,11 @@ from .stanford_dogs import get_stanford_dogs_loader
 def get_dataset(cfg):
     dataset_name = cfg.DATASET.TYPE
     method_name = cfg.MITIGATOR.TYPE
+    metric_name = cfg.METRIC
 
     if dataset_name == "biased_mnist":
         if method_name == "groupdro":
-            train_loader = get_color_mnist(
+            train_loader, train_dataset = get_color_mnist(
                 cfg.DATASET.BIASED_MNIST.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 data_label_correlation=cfg.DATASET.BIASED_MNIST.CORR,
@@ -28,7 +30,7 @@ def get_dataset(cfg):
                 sampler="weighted",
             )
         else:
-            train_loader = get_color_mnist(
+            train_loader, train_dataset = get_color_mnist(
                 cfg.DATASET.BIASED_MNIST.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 data_label_correlation=cfg.DATASET.BIASED_MNIST.CORR,
@@ -38,7 +40,7 @@ def get_dataset(cfg):
                 aug=False,
             )
 
-        val_loader = get_color_mnist(
+        val_loader, val_dataset = get_color_mnist(
             cfg.DATASET.BIASED_MNIST.ROOT,
             batch_size=256,
             data_label_correlation=0.1,
@@ -47,7 +49,7 @@ def get_dataset(cfg):
             seed=cfg.EXPERIMENT.SEED,
             aug=False,
         )
-        test_loader = get_color_mnist(
+        test_loader, test_dataset = get_color_mnist(
             cfg.DATASET.BIASED_MNIST.ROOT,
             batch_size=256,
             data_label_correlation=0.1,
@@ -65,6 +67,11 @@ def get_dataset(cfg):
             "val": val_loader,
             "test": test_loader,
         }
+        dataset["sets"] = {
+            "train": train_dataset,
+            "val": val_dataset,
+            "test": test_dataset,
+        }
         dataset["root"] = cfg.DATASET.BIASED_MNIST.ROOT
         dataset["target2name"] = {
             0: "number",
@@ -78,8 +85,12 @@ def get_dataset(cfg):
             8: "number",
             9: "number",
         }
-        if method_name == "mavias":
-            tag_train_loader = get_color_mnist(
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
+            tag_train_loader, _ = get_color_mnist(
                 cfg.DATASET.BIASED_MNIST.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
                 data_label_correlation=cfg.DATASET.BIASED_MNIST.CORR,
@@ -91,11 +102,24 @@ def get_dataset(cfg):
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),
             )
+            tag_test_loader, _ = get_color_mnist(
+                cfg.DATASET.BIASED_MNIST.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                data_label_correlation=cfg.DATASET.BIASED_MNIST.CORR,
+                n_confusing_labels=9,
+                split="valid",
+                seed=cfg.EXPERIMENT.SEED,
+                aug=False,
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+            dataset["dataloaders"]["tag_test"] = tag_test_loader
             dataset["dataloaders"]["tag_train"] = tag_train_loader
 
     elif dataset_name == "fb_biased_mnist":
         if method_name == "groupdro":
-            train_loader = get_fb_color_mnist(
+            train_loader, train_dataset = get_fb_color_mnist(
                 cfg.DATASET.FB_BIASED_MNIST.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 data_label_correlation1=cfg.DATASET.FB_BIASED_MNIST.CORR_BG,
@@ -107,7 +131,7 @@ def get_dataset(cfg):
                 sampler="weighted",
             )
         else:
-            train_loader = get_fb_color_mnist(
+            train_loader, train_dataset = get_fb_color_mnist(
                 cfg.DATASET.FB_BIASED_MNIST.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 data_label_correlation1=cfg.DATASET.FB_BIASED_MNIST.CORR_BG,
@@ -118,7 +142,7 @@ def get_dataset(cfg):
                 aug=False,
             )
 
-        val_loader = get_fb_color_mnist(
+        val_loader, val_dataset = get_fb_color_mnist(
             cfg.DATASET.FB_BIASED_MNIST.ROOT,
             batch_size=256,
             data_label_correlation1=0.1,
@@ -128,7 +152,7 @@ def get_dataset(cfg):
             seed=cfg.EXPERIMENT.SEED,
             aug=False,
         )
-        test_loader = get_fb_color_mnist(
+        test_loader, test_dataset = get_fb_color_mnist(
             cfg.DATASET.FB_BIASED_MNIST.ROOT,
             batch_size=256,
             data_label_correlation1=0.1,
@@ -148,6 +172,11 @@ def get_dataset(cfg):
             "val": val_loader,
             "test": test_loader,
         }
+        dataset["sets"] = {
+            "train": train_dataset,
+            "val": val_dataset,
+            "test": test_dataset,
+        }
         dataset["target2name"] = {
             0: "number",
             1: "number",
@@ -161,8 +190,12 @@ def get_dataset(cfg):
             9: "number",
         }
         dataset["root"] = cfg.DATASET.FB_BIASED_MNIST.ROOT
-        if method_name == "mavias":
-            tag_train_loader = get_fb_color_mnist(
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
+            tag_train_loader, _ = get_fb_color_mnist(
                 cfg.DATASET.BIASED_MNIST.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
                 data_label_correlation1=cfg.DATASET.FB_BIASED_MNIST.CORR_BG,
@@ -175,10 +208,24 @@ def get_dataset(cfg):
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),
             )
+            tag_test_loader, _ = get_fb_color_mnist(
+                cfg.DATASET.BIASED_MNIST.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                data_label_correlation1=cfg.DATASET.FB_BIASED_MNIST.CORR_BG,
+                data_label_correlation2=cfg.DATASET.FB_BIASED_MNIST.CORR_FG,
+                n_confusing_labels=9,
+                split="valid",
+                seed=cfg.EXPERIMENT.SEED,
+                aug=False,
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
+            dataset["dataloaders"]["tag_test"] = tag_test_loader
     elif dataset_name == "utkface":
         if method_name == "groupdro":
-            train_loader = get_utk_face(
+            train_loader, train_dataset = get_utk_face(
                 cfg.DATASET.UTKFACE.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 split="train",
@@ -188,7 +235,7 @@ def get_dataset(cfg):
                 sampler="weighted",
             )
         else:
-            train_loader = get_utk_face(
+            train_loader, train_dataset = get_utk_face(
                 cfg.DATASET.UTKFACE.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 split="train",
@@ -197,7 +244,7 @@ def get_dataset(cfg):
                 ratio=cfg.DATASET.UTKFACE.RATIO,
             )
 
-        val_loader = get_utk_face(
+        val_loader, val_dataset = get_utk_face(
             cfg.DATASET.UTKFACE.ROOT,
             batch_size=cfg.SOLVER.BATCH_SIZE,
             split="valid",
@@ -205,7 +252,7 @@ def get_dataset(cfg):
             image_size=cfg.DATASET.UTKFACE.IMAGE_SIZE,
         )
 
-        test_loader = get_utk_face(
+        test_loader, test_dataset = get_utk_face(
             cfg.DATASET.UTKFACE.ROOT,
             batch_size=cfg.SOLVER.BATCH_SIZE,
             split="test",
@@ -222,12 +269,21 @@ def get_dataset(cfg):
             "val": val_loader,
             "test": test_loader,
         }
+        dataset["sets"] = {
+            "train": train_dataset,
+            "val": val_dataset,
+            "test": test_dataset,
+        }
         dataset["target2name"] = {0: "male", 1: "female"}
         dataset["root"] = cfg.DATASET.UTKFACE.ROOT
         dataset["ba_groups"] = cfg.DATASET.UTKFACE.BIAS_ALIGNED
         # print(dataset["ba_groups"])
-        if method_name == "mavias":
-            tag_train_loader = get_utk_face(
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
+            tag_train_loader, _ = get_utk_face(
                 cfg.DATASET.UTKFACE.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
                 split="train",
@@ -237,10 +293,21 @@ def get_dataset(cfg):
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),
             )
+            tag_test_loader, _ = get_utk_face(
+                cfg.DATASET.UTKFACE.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                split="test",
+                bias_attr=cfg.DATASET.UTKFACE.BIAS,
+                ratio=cfg.DATASET.UTKFACE.RATIO,
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
+            dataset["dataloaders"]["tag_test"] = tag_train_loader
     elif dataset_name == "waterbirds":
         if method_name == "groupdro":
-            train_loader = get_waterbirds(
+            train_loader, train_dataset = get_waterbirds(
                 cfg.DATASET.WATERBIRDS.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 n_workers=cfg.DATASET.NUM_WORKERS,
@@ -248,20 +315,20 @@ def get_dataset(cfg):
                 sampler="weighted",
             )
         else:
-            train_loader = get_waterbirds(
+            train_loader, train_dataset = get_waterbirds(
                 cfg.DATASET.WATERBIRDS.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 n_workers=cfg.DATASET.NUM_WORKERS,
                 split="train",
             )
 
-        val_loader = get_waterbirds(
+        val_loader, val_dataset = get_waterbirds(
             cfg.DATASET.WATERBIRDS.ROOT,
             batch_size=cfg.SOLVER.BATCH_SIZE,
             n_workers=cfg.DATASET.NUM_WORKERS,
             split="val",
         )
-        test_loader = get_waterbirds(
+        test_loader, test_dataset = get_waterbirds(
             cfg.DATASET.WATERBIRDS.ROOT,
             batch_size=cfg.SOLVER.BATCH_SIZE,
             n_workers=cfg.DATASET.NUM_WORKERS,
@@ -277,24 +344,44 @@ def get_dataset(cfg):
             "val": val_loader,
             "test": test_loader,
         }
+        dataset["sets"] = {
+            "train": train_dataset,
+            "val": val_dataset,
+            "test": test_dataset,
+        }
         dataset["root"] = cfg.DATASET.WATERBIRDS.ROOT
         dataset["target2name"] = {
-            0: "bird",
-            1: "bird",
+            0: "landbird",
+            1: "waterbird",
         }
-        if method_name == "mavias":
-            tag_train_loader, _, _ = get_waterbirds(
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
+            tag_train_loader, _ = get_waterbirds(
                 cfg.DATASET.WATERBIRDS.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
                 n_workers=cfg.DATASET.NUM_WORKERS,
                 transform=get_transform(
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),
+                split="train",
+            )
+            tag_test_loader, _ = get_waterbirds(
+                cfg.DATASET.WATERBIRDS.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                n_workers=cfg.DATASET.NUM_WORKERS,
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+                split="test",
             )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
+            dataset["dataloaders"]["tag_test"] = tag_test_loader
     elif dataset_name == "celeba":
         if method_name == "groupdro":
-            train_loader = get_celeba(
+            train_loader, train_dataset = get_celeba(
                 cfg.DATASET.CELEBA.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 split="train",
@@ -304,7 +391,7 @@ def get_dataset(cfg):
                 sampler="weighted",
             )
         else:
-            train_loader = get_celeba(
+            train_loader, train_dataset = get_celeba(
                 cfg.DATASET.CELEBA.ROOT,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 split="train",
@@ -313,7 +400,7 @@ def get_dataset(cfg):
                 ratio=cfg.DATASET.CELEBA.RATIO,
             )
 
-        val_loader = get_celeba(
+        val_loader, val_dataset = get_celeba(
             cfg.DATASET.CELEBA.ROOT,
             batch_size=cfg.SOLVER.BATCH_SIZE,
             split="valid",
@@ -321,7 +408,7 @@ def get_dataset(cfg):
             img_size=cfg.DATASET.CELEBA.IMAGE_SIZE,
         )
 
-        test_loader = get_celeba(
+        test_loader, test_dataset = get_celeba(
             cfg.DATASET.CELEBA.ROOT,
             batch_size=cfg.SOLVER.BATCH_SIZE,
             split="test",
@@ -338,17 +425,26 @@ def get_dataset(cfg):
             "val": val_loader,
             "test": test_loader,
         }
+        dataset["sets"] = {
+            "train": train_dataset,
+            "val": val_dataset,
+            "test": test_dataset,
+        }
         if cfg.DATASET.CELEBA.TARGET == "blonde":
-            dataset["target2name"] = {0: "non blonde", 1: "blonde"}
+            dataset["target2name"] = {0: "non_blonde", 1: "blonde"}
         elif cfg.DATASET.CELEBA.TARGET == "makeup":
-            dataset["target2name"] = {0: "no makeup", 1: "makeup"}
+            dataset["target2name"] = {0: "no_makeup", 1: "makeup"}
         else:
             raise ValueError("Target attribute should be either blonde or makeup.")
         dataset["root"] = cfg.DATASET.CELEBA.ROOT
         dataset["ba_groups"] = cfg.DATASET.CELEBA.BIAS_ALIGNED
         # print(dataset["ba_groups"])
-        if method_name == "mavias":
-            tag_train_loader = get_celeba(
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
+            tag_train_loader, _ = get_celeba(
                 cfg.DATASET.CELEBA.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
                 split="train",
@@ -358,14 +454,25 @@ def get_dataset(cfg):
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),
             )
+            tag_test_loader, _ = get_celeba(
+                cfg.DATASET.CELEBA.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                split="test",
+                target_attr=cfg.DATASET.CELEBA.TARGET,
+                ratio=cfg.DATASET.CELEBA.RATIO,
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
+            dataset["dataloaders"]["tag_test"] = tag_test_loader
     elif dataset_name == "imagenet9":
         if method_name == "groupdro":
             raise ValueError(
                 "GroupDro requires bias attribute annotations! The imagenet dataset does not offer such information. Please select another method, or modify imagenet class so that it incorporates your own bias annotations."
             )
         else:
-            train_loader = get_imagenet9l(
+            train_loader, train_dataset = get_imagenet9l(
                 root=cfg.DATASET.IMAGENET9.ROOT_IMAGENET,
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 image_size=cfg.DATASET.IMAGENET9.IMAGE_SIZE,
@@ -394,6 +501,9 @@ def get_dataset(cfg):
             "val": val_loader,
             "test": test_loader,
         }
+        dataset["sets"] = {
+            "train": train_dataset,
+        }
 
         dataset["target2name"] = {
             0: "Dog",
@@ -408,16 +518,31 @@ def get_dataset(cfg):
         }
 
         dataset["root"] = cfg.DATASET.IMAGENET9.ROOT_IMAGENET_BG
-        if method_name == "mavias":
-            tag_train_loader = get_imagenet9l(
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
+            tag_train_loader, _ = get_imagenet9l(
                 root=cfg.DATASET.IMAGENET9.ROOT_IMAGENET,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
                 image_size=cfg.DATASET.IMAGENET9.IMAGE_SIZE,
                 transform=get_transform(
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
                 ),
+                shuffle=False,
+            )
+            tag_test_loader = get_background_challenge_data(
+                root=cfg.DATASET.IMAGENET9.ROOT_IMAGENET_BG,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                image_size=cfg.DATASET.IMAGENET9.IMAGE_SIZE,
+                bench="original",
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
             )
             dataset["dataloaders"]["tag_train"] = tag_train_loader
+            dataset["dataloaders"]["tag_test"] = tag_test_loader
     elif dataset_name == "cifar10":
         if method_name == "groupdro":
             raise ValueError(
@@ -469,7 +594,11 @@ def get_dataset(cfg):
         }
 
         dataset["root"] = cfg.DATASET.CIFAR10.ROOT
-        if method_name == "mavias":
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
             tag_train_loader = get_cifar10_loaders(
                 root=cfg.DATASET.CIFAR10.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
@@ -536,7 +665,11 @@ def get_dataset(cfg):
         dataset["target2name"] = {idx: name for idx, name in enumerate(class_names)}
 
         dataset["root"] = cfg.DATASET.CIFAR100.ROOT
-        if method_name == "mavias":
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
             tag_train_loader = get_cifar100_loaders(
                 root=cfg.DATASET.CIFAR100.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
@@ -604,7 +737,11 @@ def get_dataset(cfg):
         dataset["target2name"] = {idx: name for idx, name in enumerate(class_names)}
 
         dataset["root"] = cfg.DATASET.STANFORD_DOGS.ROOT
-        if method_name == "mavias":
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
             tag_train_loader = get_stanford_dogs_loader(
                 root=cfg.DATASET.STANFORD_DOGS.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
@@ -618,6 +755,76 @@ def get_dataset(cfg):
                 root=cfg.DATASET.STANFORD_DOGS.ROOT,
                 batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
                 image_size=cfg.DATASET.STANFORD_DOGS.IMAGE_SIZE,
+                split="test",
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+
+            dataset["dataloaders"]["tag_train"] = tag_train_loader
+            dataset["dataloaders"]["tag_test"] = tag_test_loader
+    elif dataset_name == "urbancars":
+        # if method_name == "groupdro":
+        #     raise ValueError("not implemented")
+        # else:
+        train_loader, train_dataset = get_urbancars_loader(
+            root=cfg.DATASET.URBANCARS.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.URBANCARS.IMAGE_SIZE,
+            split="train",
+        )
+
+        val_loader, val_dataset = get_urbancars_loader(
+            root=cfg.DATASET.URBANCARS.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.URBANCARS.IMAGE_SIZE,
+            split="test",
+        )
+
+        test_loader, test_dataset = get_urbancars_loader(
+            root=cfg.DATASET.URBANCARS.ROOT,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            image_size=cfg.DATASET.URBANCARS.IMAGE_SIZE,
+            split="test",
+        )
+
+        dataset = {}
+        dataset["num_class"] = 2
+        dataset["num_groups"] = 2 * 2 * 2
+        dataset["biases"] = ["background", "object"]
+        dataset["dataloaders"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": test_loader,
+        }
+        dataset["sets"] = {
+            "train": train_dataset,
+            "val": val_dataset,
+            "test": test_dataset,
+        }
+
+        # Create a dictionary mapping index to class name
+        dataset["target2name"] = {0: "urban_car", 1: "country_car"}
+
+        dataset["root"] = cfg.DATASET.URBANCARS.ROOT
+        if (
+            method_name == "mavias"
+            or method_name == "erm_tags"
+            or metric_name == "wg_ovr_tags"
+        ):
+            tag_train_loader, _ = get_urbancars_loader(
+                root=cfg.DATASET.URBANCARS.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                image_size=cfg.DATASET.URBANCARS.IMAGE_SIZE,
+                split="train",
+                transform=get_transform(
+                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                ),
+            )
+            tag_test_loader, _ = get_urbancars_loader(
+                root=cfg.DATASET.URBANCARS.ROOT,
+                batch_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.BATCH_SIZE,
+                image_size=cfg.DATASET.URBANCARS.IMAGE_SIZE,
                 split="test",
                 transform=get_transform(
                     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE

@@ -3,7 +3,19 @@ import sys
 import subprocess
 import torch
 import logging
+import numpy as np
+import random
 
+# this function guarantees reproductivity
+# other packages also support seed options, you can add to this function
+def seed_everything(seed):
+	random.seed(seed)
+	os.environ['PYTHONHASHSEED'] = str(seed)
+	np.random.seed(seed)
+	torch.manual_seed(seed)
+	torch.cuda.manual_seed_all(seed)
+	torch.backends.cudnn.deterministic = True
+	torch.backends.cudnn.benchmark = False
 
 def setup_logger(log_file):
     logger = logging.getLogger()

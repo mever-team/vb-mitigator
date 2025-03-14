@@ -1,0 +1,28 @@
+EXPERIMENT:
+  NAME: "jtt"
+  TAG: "bench"
+  PROJECT: "celeba_baselines"
+DATASET:
+  TYPE: "celeba"
+  BIASES: ["gender"]
+  CELEBA:
+    BIAS: "gender"
+    TARGET: "blonde"
+MITIGATOR:
+  TYPE: "jtt"
+  JTT:
+    BIAS_DISCOVERY_EPOCHS: 10
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 10
+  LR: 0.00001
+  TYPE: "SGD"
+  WEIGHT_DECAY: 1.0
+  SCHEDULER:
+    LR_DECAY_STAGES: [1000]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet18"
+  PRETRAINED: True
+  FREEZE_BACKBONE: False
+METRIC: "wg_ovr"

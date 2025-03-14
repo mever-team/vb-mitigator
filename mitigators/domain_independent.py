@@ -9,7 +9,6 @@ from .base_trainer import BaseTrainer
 
 class DomainIndependentTrainer(BaseTrainer):
 
-
     def _setup_dataset(self):
         dataset = get_dataset(self.cfg)
         self.num_class = dataset["num_class"]
@@ -21,29 +20,30 @@ class DomainIndependentTrainer(BaseTrainer):
         self.num_group = dataset["num_groups"]
         self.num_biases = self.num_group / self.num_class
         return
-    
-    
+
     def _setup_models(self):
         self.model = DomainIndependentClassifier(
-            self.cfg.MODEL.TYPE, self.num_class, self.num_biases,
+            self.cfg.MODEL.TYPE,
+            self.num_class,
+            self.num_biases,
+            self.cfg.MODEL.PRETRAINED,
         ).to(self.device)
 
-    
     def _train_iter(self, batch):
         inputs = batch["inputs"].to(self.device)
         targets = batch["targets"].to(self.device)
         if len(self.biases) == 1:
             domain_label = batch[self.biases[0]].to(self.device)
         else:
-            raise NotImplementedError(f"You should define the domain labels based on multiple bias types.")
-
+            domain_label = targets * 0
+            for i, bias in enumerate(self.biases):
+                domain_label += batch[bias].to(self.device) * (i + 1)
+            domain_label = domain_label.to(self.device)
 
         self.optimizer.zero_grad()
         logits_per_domain = self.model(inputs)
-        logits = logits_per_domain[
-            range(logits_per_domain.shape[0]), domain_label
-        ]
-        
+        logits = logits_per_domain[range(logits_per_domain.shape[0]), domain_label]
+
         loss = self.criterion(logits, targets)
         self._loss_backward(loss)
         self._optimizer_step()

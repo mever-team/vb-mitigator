@@ -1,0 +1,22 @@
+EXPERIMENT:
+  NAME: "debian"
+  TAG: "dev"
+  PROJECT: "imagenet9_baselines"
+DATASET:
+  TYPE: "imagenet9"
+  BIASES: ["unknown"]
+MITIGATOR:
+  TYPE: "debian"
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 30
+  LR: 0.001
+  TYPE: "SGD"
+  WEIGHT_DECAY: 1e-4
+  SCHEDULER:
+    LR_DECAY_STAGES: [25]
+    LR_DECAY_RATE: 0.5
+MODEL:
+  TYPE: "resnet50"
+  PRETRAINED: True
+METRIC: "wg_ovr_tags"
