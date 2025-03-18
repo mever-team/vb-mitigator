@@ -92,3 +92,7 @@ You can find the complete documentation for VB-Mitigator [here](https://vb-mitig
 
 **Maintainer:** Ioannis Sarridis (gsarridis@iti.gr)<br>
 
+## Acknowledgments
+This research was supported by the EU Horizon Europe projects MAMMOth
+(Grant Agreement 101070285) and ELIAS (Grant Agreement 101120237).
+<div align="center"> <img src="assets/mammoth_logo.svg" width="20%" alt="MAMMOth Project Logo"> <img src="assets/elias_logo.png" width="20%" alt="ELIAS Project Logo"> </div>

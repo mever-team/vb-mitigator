@@ -553,3 +553,17 @@ Version 1.0.0:
 - Initial release with support for 10 competitive bias mitigation approaches and 6 benchmarks.
 - Extensive documentation and tutorials for easy integration and usage.
 - Support for custom datasets, metrics, and methods.
+
+
+Acknowledgments
+===============
+
+This research was supported by the EU Horizon Europe projects **MAMMOth**
+(Grant Agreement 101070285) and **ELIAS** (Grant Agreement 101120237).
+
+.. raw:: html
+
+    <div align="center">
+        <img src="_static/mammoth_logo.svg" width="20%" alt="MAMMOth Project Logo">
+        <img src="_static/elias_logo.png" width="20%" alt="ELIAS Project Logo">
+    </div>
