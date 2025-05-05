@@ -10,7 +10,11 @@ from .utk_face import get_utk_face
 from .waterbirds import get_waterbirds
 from .cifar10 import get_cifar10_loaders
 from .stanford_dogs import get_stanford_dogs_loader
-
+import torch
+import torchvision.transforms as transforms
+import torchvision.datasets as datasets
+from torch.utils.data import DataLoader
+from .imagenet import ImageNet
 
 def get_dataset(cfg):
     dataset_name = cfg.DATASET.TYPE
@@ -89,6 +93,7 @@ def get_dataset(cfg):
             method_name == "mavias"
             or method_name == "erm_tags"
             or metric_name == "wg_ovr_tags"
+            or method_name == "mhmavias"
         ):
             tag_train_loader, _ = get_color_mnist(
                 cfg.DATASET.BIASED_MNIST.ROOT,
@@ -98,9 +103,9 @@ def get_dataset(cfg):
                 split="train",
                 seed=cfg.EXPERIMENT.SEED,
                 aug=False,
-                transform=get_transform(
-                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
-                ),
+                # transform=get_transform(
+                #     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                # ),
             )
             tag_test_loader, _ = get_color_mnist(
                 cfg.DATASET.BIASED_MNIST.ROOT,
@@ -110,9 +115,9 @@ def get_dataset(cfg):
                 split="valid",
                 seed=cfg.EXPERIMENT.SEED,
                 aug=False,
-                transform=get_transform(
-                    image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
-                ),
+                # transform=get_transform(
+                #     image_size=cfg.MITIGATOR.MAVIAS.TAGGING_MODEL.IMG_SIZE
+                # ),
             )
             dataset["dataloaders"]["tag_test"] = tag_test_loader
             dataset["dataloaders"]["tag_train"] = tag_train_loader
@@ -282,6 +287,7 @@ def get_dataset(cfg):
             method_name == "mavias"
             or method_name == "erm_tags"
             or metric_name == "wg_ovr_tags"
+            or method_name == "mhmavias"
         ):
             tag_train_loader, _ = get_utk_face(
                 cfg.DATASET.UTKFACE.ROOT,
@@ -443,6 +449,7 @@ def get_dataset(cfg):
             method_name == "mavias"
             or method_name == "erm_tags"
             or metric_name == "wg_ovr_tags"
+            or method_name == "mhmavias"
         ):
             tag_train_loader, _ = get_celeba(
                 cfg.DATASET.CELEBA.ROOT,
@@ -580,6 +587,12 @@ def get_dataset(cfg):
             "test": test_loader,
         }
 
+        dataset["sets"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": test_loader,
+        }
+
         dataset["target2name"] = {
             0: "Airplane",
             1: "Car",
@@ -648,10 +661,16 @@ def get_dataset(cfg):
         )
 
         dataset = {}
-        dataset["num_class"] = 10
+        dataset["num_class"] = 100
         dataset["num_groups"] = 10
         dataset["biases"] = [cfg.DATASET.CIFAR100.BIAS]
         dataset["dataloaders"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": test_loader,
+        }
+
+        dataset["sets"] = {
             "train": train_loader,
             "val": val_loader,
             "test": test_loader,
@@ -691,6 +710,62 @@ def get_dataset(cfg):
 
             dataset["dataloaders"]["tag_train"] = tag_train_loader
             dataset["dataloaders"]["tag_test"] = tag_test_loader
+    elif dataset_name == "imagenet":
+        
+        # ImageNet standard normalization
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                        std=[0.229, 0.224, 0.225])
+
+        # Transforms
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+        val_transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+        # Datasets
+        train_dataset = ImageNet(root=f'{cfg.DATASET.IMAGENET.ROOT}/train', transform=train_transform)
+        val_dataset   = ImageNet(root=f'{cfg.DATASET.IMAGENET.ROOT}/imagenet-val', transform=val_transform)
+
+        # Dataloaders
+        train_loader = DataLoader(train_dataset, batch_size=cfg.SOLVER.BATCH_SIZE, shuffle=True,
+                                num_workers=4, pin_memory=True)
+        val_loader   = DataLoader(val_dataset, batch_size=cfg.SOLVER.BATCH_SIZE, shuffle=False,
+                                num_workers=4, pin_memory=True)
+
+        dataset = {}
+        dataset["num_class"] = 1000
+        dataset["num_groups"] = 10
+        dataset["biases"] = [cfg.DATASET.IMAGENET.BIAS]
+        dataset["dataloaders"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": val_loader,
+        }
+
+        dataset["sets"] = {
+            "train": train_loader,
+            "val": val_loader,
+            "test": val_loader,
+        }
+
+        class_names = (
+            train_loader.dataset.classes
+        )  # This returns a list of class names in order of indices
+
+        # Create a dictionary mapping index to class name
+        dataset["target2name"] = {idx: name for idx, name in enumerate(class_names)}
+
+        dataset["root"] = cfg.DATASET.IMAGENET.ROOT
+        
     elif dataset_name == "stanford_dogs":
         if method_name == "groupdro":
             raise ValueError(

@@ -1,0 +1,24 @@
+EXPERIMENT:
+  NAME: "subarc"
+  TAG: "dev"
+  PROJECT: "imagenet_baselines"
+DATASET:
+  TYPE: "imagenet"
+  BIASES: ["unknown"]
+  CIFAR100:
+    BIAS: "unknown"
+MITIGATOR:
+  TYPE: "subarc"
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 25
+  LR: 0.05
+  TYPE: "SGD"
+  WEIGHT_DECAY: 1e-4
+  SCHEDULER:
+    LR_DECAY_STAGES: [7, 15, 22]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet18"
+  PRETRAINED: True
+METRIC: "acc"

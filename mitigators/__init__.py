@@ -13,7 +13,20 @@ from .erm_tags import ERMTagsTrainer
 from .flacb import FLACBTrainer
 from .jtt import JTTTrainer
 from .softcon import SoftConTrainer
+from .mhmavias import MHMAVIASTrainer
+from .model_editing import ModelEditingTrainer
+from .vae import VAETrainer
+from .gcos import GCosTrainer
+from .subarc import SubArcTrainer
+from .gcam import GCamTrainer
+from .multihead import MultiHeadTrainer
+from .prune import PruneTrainer
+from .multitrain import MultiTrainTrainer
+from .lr import LRTrainer
+from .nce import NCETrainer
+from .con import ConTrainer
 
+from .dino import DinoTrainer
 method_to_trainer = {
     "erm": ERMTrainer,
     "flac": FLACTrainer,
@@ -29,5 +42,18 @@ method_to_trainer = {
     "end": EndTrainer,
     "erm_tags": ERMTagsTrainer,
     "jtt": JTTTrainer,
-    "softcon": SoftConTrainer
+    "softcon": SoftConTrainer,
+    "mhmavias": MHMAVIASTrainer,
+    "model_editing": ModelEditingTrainer,
+    "vae": VAETrainer,
+    "gcos": GCosTrainer,
+    "gcam": GCamTrainer,
+    "subarc": SubArcTrainer,
+    "multihead": MultiHeadTrainer,
+    "prune": PruneTrainer,
+    "multitrain": MultiTrainTrainer,
+    "lr": LRTrainer,
+    "nce": NCETrainer,
+    "con": ConTrainer,
+    "dino": DinoTrainer
 }

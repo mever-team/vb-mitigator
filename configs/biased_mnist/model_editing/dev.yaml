@@ -1,0 +1,13 @@
+EXPERIMENT:
+  NAME: "model_editing"
+  TAG: "dev"
+  PROJECT: "biased_mnist_baselines"
+  EVAL: True
+DATASET:
+  TYPE: "biased_mnist"
+  BIASES: ["color"]
+MITIGATOR:
+  TYPE: "model_editing"
+MODEL:
+  TYPE: "simple_conv"
+METRIC: "acc"

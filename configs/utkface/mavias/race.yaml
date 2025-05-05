@@ -8,14 +8,19 @@ DATASET:
     BIAS: "race"
 MITIGATOR:
   TYPE: "mavias"
+  MAVIAS:
+    LOSS:
+      ALPHA: 0.01
+      LAMBDA: 0.4
 SOLVER:
   BATCH_SIZE: 128
   EPOCHS: 20
   LR: 0.001
   TYPE: "Adam"
   SCHEDULER:
-    LR_DECAY_STAGES: [60]
+    LR_DECAY_STAGES: [6, 13]
     LR_DECAY_RATE: 0.1
 MODEL:
   TYPE: "resnet18"
-METRIC: "unb_bc_ba"
+  PRETRAINED: True
+METRIC: "wg_ovr"

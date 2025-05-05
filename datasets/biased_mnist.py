@@ -363,7 +363,7 @@ def get_color_mnist(
                 ]
             )
         else:
-            train_transform = transforms.Compose([transforms.ToTensor(), normalize])
+            train_transform = transforms.Compose([transforms.Resize((32,32)), transforms.ToTensor(), normalize])
     else:
         train_transform = transform
     if two_crop:
@@ -454,7 +454,7 @@ def get_color_mnist(
             sampler=sampler,
             num_workers=num_workers,
             pin_memory=True,
-            drop_last=split == "train",
+            # drop_last=split == "train",
         )
 
         return dataloader, dataset

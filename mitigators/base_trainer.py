@@ -88,7 +88,7 @@ class BaseTrainer:
         self._metric_specific_setups()
         self._basic_eval_setups()
         self._method_specific_setups()
-        self._setup_resume()
+        # self._setup_resume()
         show_cfg(cfg, self.logger)
 
     def _setup_resume(self):
@@ -181,6 +181,8 @@ class BaseTrainer:
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.optimizer, T_max=self.cfg.SOLVER.SCHEDULER.T_MAX
             )
+        elif self.cfg.SOLVER.SCHEDULER.TYPE == "None":
+            return
         else:
             raise ValueError(
                 f"Unsupported scheduler type: {self.cfg.SOLVER.SCHEDULER.TYPE}"

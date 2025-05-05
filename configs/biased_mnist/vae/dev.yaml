@@ -1,0 +1,22 @@
+EXPERIMENT:
+  NAME: "vae"
+  TAG: "dev"
+  PROJECT: "biased_mnist_baselines"
+DATASET:
+  TYPE: "biased_mnist"
+  BIASES: ["color"]
+MITIGATOR:
+  TYPE: "vae"
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 80
+  LR: 0.001
+  TYPE: "Adam"
+  SCHEDULER:
+    LR_DECAY_STAGES: [26, 53]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "classification_head"
+METRIC: "acc"
+LOG:
+  TRAIN_PERFORMANCE: True

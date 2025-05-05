@@ -17,7 +17,7 @@ def wg_ovr(data):
             groups[group_key]["correct"] += 1
     
     accuracies = {key: val["correct"] / val["total"] for key, val in groups.items() if val["total"] > 0}
-    
+    print(accuracies)
     worst_group_acc = min(accuracies.values(), default=None)
     avg_group_acc = sum(accuracies.values()) / len(accuracies) if accuracies else None
 

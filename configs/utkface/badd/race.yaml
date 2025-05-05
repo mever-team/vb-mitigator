@@ -20,4 +20,4 @@ SOLVER:
     LR_DECAY_RATE: 0.1
 MODEL:
   TYPE: "resnet18"
-METRIC: "unb_bc_ba"
+METRIC: "wg_ovr"
