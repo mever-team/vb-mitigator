@@ -25,8 +25,11 @@ from .multitrain import MultiTrainTrainer
 from .lr import LRTrainer
 from .nce import NCETrainer
 from .con import ConTrainer
-
+from .erm_bcc import ERMBCCTrainer
+from .maviasb import MAVIASBTrainer
 from .dino import DinoTrainer
+from .selfkd import SelfkdTrainer
+
 method_to_trainer = {
     "erm": ERMTrainer,
     "flac": FLACTrainer,
@@ -55,5 +58,8 @@ method_to_trainer = {
     "lr": LRTrainer,
     "nce": NCETrainer,
     "con": ConTrainer,
-    "dino": DinoTrainer
+    "dino": DinoTrainer,
+    "erm_bcc": ERMBCCTrainer,
+    "maviasb": MAVIASBTrainer,
+    "selfkd": SelfkdTrainer,
 }

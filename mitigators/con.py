@@ -1,7 +1,7 @@
 import math
 import os
 from tqdm import tqdm
-from datasets.utk_face import get_utk_face
+from my_datasets.utk_face import get_utk_face
 from tools.utils import load_checkpoint
 import torch
 import numpy as np
@@ -19,10 +19,24 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE 
+from sklearn.manifold import TSNE
 import matplotlib.patches as mpatches
 from collections import defaultdict
-from .losses import ContrastiveLoss, DistillKL, FocalLoss, LDAMLoss, MAELoss, NCELoss, NCEandAGCE, NCEandAUE, RCELoss, SubcenterArcMarginProduct, LabelSmoothSoftmaxCEV1, ArcMarginProduct, WBLoss
+from .losses import (
+    ContrastiveLoss,
+    DistillKL,
+    FocalLoss,
+    LDAMLoss,
+    MAELoss,
+    NCELoss,
+    NCEandAGCE,
+    NCEandAUE,
+    RCELoss,
+    SubcenterArcMarginProduct,
+    LabelSmoothSoftmaxCEV1,
+    ArcMarginProduct,
+    WBLoss,
+)
 from collections import defaultdict
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
@@ -60,18 +74,19 @@ class SimCLR(torch.nn.Module):
             hidden_dim=512,
             output_dim=128,
         )
-        self.fc = nn.Linear(128,2)
+        self.fc = nn.Linear(128, 2)
 
     def forward(self, x):
         _, features = self.backbone(x)
         z = self.projection_head(features)
         return z
-    
+
     def predict(self, x):
         _, features = self.backbone(x)
         z = self.projection_head(features)
         z = self.fc(z)
         return z
+
 
 class LowCorrelationPairDataset(Dataset):
     def __init__(self, base_dataset, pair_indices_path):
@@ -94,14 +109,13 @@ class LowCorrelationPairDataset(Dataset):
 
         # Assuming each item is a dict with 'inputs' and 'targets'
         return {
-            'x_i': item_i['inputs'],
-            'y_i': item_i['targets'],
-            'x_j': item_j['inputs'],
-            'y_j': item_j['targets'],
-            'b_i': item_i["race"],
-            'b_j': item_j["race"]
+            "x_i": item_i["inputs"],
+            "y_i": item_i["targets"],
+            "x_j": item_j["inputs"],
+            "y_j": item_j["targets"],
+            "b_i": item_i["race"],
+            "b_j": item_j["race"],
         }
-
 
 
 def cluster_by_class(features, targets, n_clusters=2):
@@ -147,15 +161,16 @@ def get_sample_weights(clusters, cluster_acc, targets, indices, l=0.66):
         for i, label in zip(cls_indices, cluster_labels):
             idx = indices[i].item()
             if label == hard_cluster:
-                weights[idx] = 0.33 
+                weights[idx] = 0.33
             else:
                 weights[idx] = 0.33 + l
     return weights
 
+
 class ConTrainer(BaseTrainer):
     def _setup_resume(self):
         return
-    
+
     def _setup_models(self):
         self.model = get_model(
             self.cfg.MODEL.TYPE,
@@ -168,51 +183,48 @@ class ConTrainer(BaseTrainer):
             for param in self.model.fc.parameters():
                 param.requires_grad = True
 
-        self.model =  SimCLR(self.model)
+        self.model = SimCLR(self.model)
         self.model.to(self.device)
 
     def _setup_optimizer(self):
         super()._setup_optimizer()
 
         self.optimizer_fc = torch.optim.Adam(
-                self.model.fc.parameters(),
-                lr=0.001,
-                weight_decay=1e-4,
-            )
-      
-    
+            self.model.fc.parameters(),
+            lr=0.001,
+            weight_decay=1e-4,
+        )
+
     def _setup_criterion(self):
-        # self.criterion = LabelSmoothSoftmaxCEV1() 
-        self.criterion = torch.nn.CrossEntropyLoss() 
+        # self.criterion = LabelSmoothSoftmaxCEV1()
+        self.criterion = torch.nn.CrossEntropyLoss()
         self.criterion_con = ContrastiveLoss(margin=2.0)
         # self.criterion_kd = DistillKL(T=4)
         self.criterion_ssl = loss.NTXentLoss(temperature=0.5)
-
-
 
     def _train_iter(self, batch):
         inputs = batch["inputs"]
         # print(inputs[0].shape)
         # images = torch.stack([sample for sample in inputs], dim=0)
-        view1, view2 = inputs[0], inputs[1] 
+        view1, view2 = inputs[0], inputs[1]
         view1 = view1.to(self.device)
         view2 = view2.to(self.device)
         # total_images = torch.cat([inputs[:,0], inputs[:,1]], dim=0)
         # total_images = total_images.to(self.device)
-       
+
         indices = batch["index"]
         targets = batch["targets"].to(self.device)
         biases = batch[self.biases[0]].to(self.device)
-        
-        # if self.current_epoch <= 10: 
+
+        # if self.current_epoch <= 10:
         #     targets = batch["targets"].to(self.device)
-        # else: 
+        # else:
         #     targets = torch.tensor(
         #         [self.preds[int(i)] for i in indices],
         #         dtype=torch.long,
         #         device=self.device
         #     )
-        
+
         self.optimizer.zero_grad()
         # total_features = self.model(total_images)
         outputs1 = self.model(view1)
@@ -226,12 +238,10 @@ class ConTrainer(BaseTrainer):
         #     torch.max(outputs[:, 0:10], dim=1).values,   # max over logits 0–10
         #     torch.max(outputs[:, 11:20], dim=1).values   # max over logits 11–20
         # ], dim=1)
-      
-        
+
         # Convert to probabilities
         # outputs = F.softmax(outputs, dim=1)
 
-        
         # N = targets.shape[0]
         # weight_matrix = torch.zeros(N, 2, device=weights.device)
 
@@ -257,29 +267,27 @@ class ConTrainer(BaseTrainer):
         #     weights = torch.zeros_like(targets, dtype=torch.float32).to(self.device) + 1
         # loss = F.cross_entropy(outputs,targets,reduction="none") * weights
         # loss = loss.mean()
-        loss = self.criterion_ssl(outputs1,outputs2)
+        loss = self.criterion_ssl(outputs1, outputs2)
         # loss = (loss * weights).mean()
         self._loss_backward(loss)
         self._optimizer_step()
         return {"train_cls_loss": loss}
-    
+
     def _train_iter_fc(self, batch):
         inputs = batch["inputs"]
         inputs = inputs.to(self.device)
         indices = batch["index"]
         targets = batch["targets"].to(self.device)
         biases = batch[self.biases[0]].to(self.device)
-        
-        
+
         self.optimizer_fc.zero_grad()
         outputs = self.model.predict(inputs)
-      
-        loss = F.cross_entropy(outputs,targets)
+
+        loss = F.cross_entropy(outputs, targets)
         self._loss_backward(loss)
         self.optimizer_fc.step()
         return {"train_cls_loss": loss}
-    
-    
+
     def _val_iter(self, batch):
         batch_dict = {}
         inputs = batch["inputs"].to(self.device)
@@ -293,8 +301,8 @@ class ConTrainer(BaseTrainer):
         for b in self.biases:
             batch_dict[b] = batch[b]
         return batch_dict, loss
-    
-    def freeze(self,flag):
+
+    def freeze(self, flag):
         for param in self.model.parameters():
             param.requires_grad = not flag
         for param in self.model.fc.parameters():
@@ -320,8 +328,8 @@ class ConTrainer(BaseTrainer):
             loss_dict = self._train_iter_fc(batch)
         self.scheduler.step()
         avg_loss = {key: value.avg for key, value in avg_loss.items()}
-       
-        if self.current_epoch == 199: # or self.current_epoch == 8:
+
+        if self.current_epoch == 199:  # or self.current_epoch == 8:
             self.collect_all()
             self.clustering()
             # self._setup_models()
@@ -333,17 +341,16 @@ class ConTrainer(BaseTrainer):
         transform = transforms.SimCLRTransform(input_size=64, cj_prob=0.5)
 
         self.dataloaders["train_con"], _ = get_utk_face(
-                self.cfg.DATASET.UTKFACE.ROOT,
-                batch_size=512,
-                split="train",
-                bias_attr=self.cfg.DATASET.UTKFACE.BIAS,
-                ratio=self.cfg.DATASET.UTKFACE.RATIO,
-                transform=transform,
-                two_crop=False
-            )
-      
+            self.cfg.DATASET.UTKFACE.ROOT,
+            batch_size=512,
+            split="train",
+            bias_attr=self.cfg.DATASET.UTKFACE.BIAS,
+            ratio=self.cfg.DATASET.UTKFACE.RATIO,
+            transform=transform,
+            two_crop=False,
+        )
 
-    def collect_preds(self): 
+    def collect_preds(self):
         self.model.eval()
         self.preds = {}
         with torch.no_grad():
@@ -352,21 +359,21 @@ class ConTrainer(BaseTrainer):
                 inputs = batch["inputs"].to(self.device)
                 targets = batch["targets"].to(self.device)
                 indices = batch["index"]
-                
+
                 outputs = self.model(inputs)
                 if not isinstance(outputs, tuple):
                     raise ValueError("Model output must be a tuple (logits, features)")
                 outputs, features = outputs
-                preds = torch.argmax(outputs,dim=1)
+                preds = torch.argmax(outputs, dim=1)
                 # logits = self.metric_loss.predict(features,targets)
-               
+
                 # self.losses = {**self.losses, **{idx.item() : loss[i].item() for idx, i in zip(indices,range(targets.shape[0]))} }
                 for idx, pred in zip(indices, preds):
                     idx_item = idx.item()
                     self.preds[idx_item] = pred.item()
         self.model.train()
 
-    def collect_all(self): 
+    def collect_all(self):
         self.model.eval()
         self.preds = []
         self.targets = []
@@ -402,12 +409,17 @@ class ConTrainer(BaseTrainer):
         targets = self.targets.numpy()  # (N, T)
         indices_all = self.indices.numpy()
         save_path = "timeseries_data_feats.npz"
-        np.savez(save_path, biases=biases, targets=targets,  feats=feats, indices_all=indices_all)
-        
-
+        np.savez(
+            save_path,
+            biases=biases,
+            targets=targets,
+            feats=feats,
+            indices_all=indices_all,
+        )
 
     def clustering(self):
-        self.clusters = cluster_by_class(self.features,self.targets)
-        accs = estimate_cluster_accuracy(self.targets,self.preds,self.clusters)
-        self.weights = get_sample_weights(self.clusters, accs, self.targets, self.indices)
-
+        self.clusters = cluster_by_class(self.features, self.targets)
+        accs = estimate_cluster_accuracy(self.targets, self.preds, self.clusters)
+        self.weights = get_sample_weights(
+            self.clusters, accs, self.targets, self.indices
+        )

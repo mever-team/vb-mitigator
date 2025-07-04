@@ -6,7 +6,7 @@ from tqdm import tqdm
 import pandas as pd
 import json
 
-from datasets.stanford_dogs import get_stanford_dogs_loader
+from my_datasets.stanford_dogs import get_stanford_dogs_loader
 from models.resnet import ResNet18
 
 # Load model

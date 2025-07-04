@@ -1,6 +1,6 @@
 EXPERIMENT:
   NAME: "erm"
-  TAG: "dev"
+  TAG: "r32"
   PROJECT: "cifar10_baselines"
 DATASET:
   TYPE: "cifar10"
@@ -19,5 +19,5 @@ SOLVER:
     LR_DECAY_STAGES: [50]
     LR_DECAY_RATE: 0.1
 MODEL:
-  TYPE: "resnet20"
-METRIC: "acc"
+  TYPE: "resnet32"
+METRIC: "wg_ovr_tags"

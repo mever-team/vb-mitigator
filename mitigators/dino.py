@@ -1,7 +1,7 @@
 import math
 import os
 from tqdm import tqdm
-from datasets.utk_face import get_utk_face
+from my_datasets.utk_face import get_utk_face
 from tools.utils import load_checkpoint
 import torch
 import numpy as np
@@ -19,10 +19,24 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE 
+from sklearn.manifold import TSNE
 import matplotlib.patches as mpatches
 from collections import defaultdict
-from .losses import ContrastiveLoss, DistillKL, FocalLoss, LDAMLoss, MAELoss, NCELoss, NCEandAGCE, NCEandAUE, RCELoss, SubcenterArcMarginProduct, LabelSmoothSoftmaxCEV1, ArcMarginProduct, WBLoss
+from .losses import (
+    ContrastiveLoss,
+    DistillKL,
+    FocalLoss,
+    LDAMLoss,
+    MAELoss,
+    NCELoss,
+    NCEandAGCE,
+    NCEandAUE,
+    RCELoss,
+    SubcenterArcMarginProduct,
+    LabelSmoothSoftmaxCEV1,
+    ArcMarginProduct,
+    WBLoss,
+)
 from collections import defaultdict
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
@@ -49,19 +63,17 @@ from lightly import transforms
 from lightly.data import LightlyDataset
 from lightly.models.modules import heads
 
+
 class DinoTrainer(BaseTrainer):
     def _setup_resume(self):
         return
-    
+
     def _setup_models(self):
-        self.model = nn.Linear(768, self.num_class) 
-        self.extractor = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
+        self.model = nn.Linear(768, self.num_class)
+        self.extractor = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14")
         self.model.to(self.device)
         self.extractor.to(self.device)
         self.extractor.eval()
-
-    
-      
 
     def _train_iter(self, batch):
         inputs = batch["inputs"].to(self.device)
@@ -74,7 +86,7 @@ class DinoTrainer(BaseTrainer):
         self._loss_backward(loss)
         self._optimizer_step()
         return {"train_cls_loss": loss}
-   
+
     def _val_iter(self, batch):
         batch_dict = {}
         inputs = batch["inputs"].to(self.device)
@@ -88,5 +100,3 @@ class DinoTrainer(BaseTrainer):
         for b in self.biases:
             batch_dict[b] = batch[b]
         return batch_dict, loss
-    
-   

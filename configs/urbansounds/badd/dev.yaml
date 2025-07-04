@@ -1,0 +1,27 @@
+EXPERIMENT:
+  NAME: "badd"
+  TAG: "dev"
+  PROJECT: "urbansounds_baselines"
+DATASET:
+  TYPE: "urbansounds"
+  BIASES: ["bias"]
+  NUM_WORKERS: 0
+MITIGATOR:
+  TYPE: "badd"
+  BADD: 
+    BCC_PATH: "./output/urbansounds_baselines/bcc/erm/latest"
+    M: 2.0
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 100
+  LR: 0.001
+  TYPE: "Adam"
+  WEIGHT_DECAY: 1e-4
+  SCHEDULER:
+    LR_DECAY_STAGES: [33, 66]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "cnn_classifier_mfcc"
+METRIC: "wg_ovr"
+LOG:
+  SAVE_CRITERION: "test"

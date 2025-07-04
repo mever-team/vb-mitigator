@@ -1,5 +1,5 @@
 import os
-from datasets.builder import get_dataset
+from my_datasets.builder import get_dataset
 from models.builder import get_model
 from tools.utils import load_checkpoint, log_msg, save_checkpoint
 import torch
@@ -21,7 +21,6 @@ class DebiANTrainer(BaseTrainer):
         self.ba_groups = dataset["ba_groups"] if "ba_groups" in dataset else None
         dataset2 = get_dataset(self.cfg)
         self.second_train_loader = dataset2["dataloaders"]["train"]
-
 
     def _setup_criterion(self):
         super()._setup_criterion()
@@ -53,8 +52,6 @@ class DebiANTrainer(BaseTrainer):
         else:
             raise ValueError(f"Unsupported optimizer type: {self.cfg.SOLVER.TYPE}")
 
-
-
     def _train_iter(self, batch, batch2):
 
         self.model.train()
@@ -62,7 +59,6 @@ class DebiANTrainer(BaseTrainer):
 
         inputs = batch["inputs"].to(self.device)
         targets = batch["targets"].to(self.device)
-
 
         with torch.no_grad():
             spurious_logits = self.bias_discover_net(inputs)
@@ -96,10 +92,7 @@ class DebiANTrainer(BaseTrainer):
                 (1 - p_spurious_w_same_t_val) * p_vanilla_w_same_t_val
             ).sum() / ((1 - p_spurious_w_same_t_val).sum() + EPS)
 
-            if (
-                negative_spurious_group_avg_p
-                < positive_spurious_group_avg_p
-            ):
+            if negative_spurious_group_avg_p < positive_spurious_group_avg_p:
                 p_spurious_w_same_t_val = 1 - p_spurious_w_same_t_val
 
             weight = 1 + p_spurious_w_same_t_val
@@ -111,7 +104,7 @@ class DebiANTrainer(BaseTrainer):
         self.optimizer.step()
         self.optimizer.zero_grad(set_to_none=True)
 
-        ### bias discover net 
+        ### bias discover net
 
         self.bias_discover_net.train()
         self.model.eval()
@@ -124,10 +117,9 @@ class DebiANTrainer(BaseTrainer):
             if isinstance(target_logits, tuple):
                 target_logits, _ = target_logits
 
-
         spurious_logits = self.bias_discover_net(inputs)
         if isinstance(spurious_logits, tuple):
-                spurious_logits, _ = spurious_logits
+            spurious_logits, _ = spurious_logits
 
         label = targets.long()
         label = label.reshape(target_logits.shape[0])
@@ -155,8 +147,7 @@ class DebiANTrainer(BaseTrainer):
             discover_net_deo_loss = -torch.log(
                 EPS
                 + torch.abs(
-                    positive_spurious_group_avg_p
-                    - negative_spurious_group_avg_p
+                    positive_spurious_group_avg_p - negative_spurious_group_avg_p
                 )
             )
 
@@ -183,13 +174,12 @@ class DebiANTrainer(BaseTrainer):
         self.optimizer_bias_discover_net.zero_grad(set_to_none=True)
 
         return {"train_cls_loss": ce_loss, "train_bias_loss": loss_discover}
-    
 
     def _train_epoch(self):
         self._set_train()
         self.current_lr = self.scheduler.get_last_lr()[0]
         avg_loss = None
-        for batch, batch2 in zip(self.dataloaders["train"],self.second_train_loader):
+        for batch, batch2 in zip(self.dataloaders["train"], self.second_train_loader):
             bsz = batch["targets"].shape[0]
             loss_dict = self._train_iter(batch, batch2)
             # initialize if needed
@@ -201,8 +191,6 @@ class DebiANTrainer(BaseTrainer):
         self.scheduler.step()
         avg_loss = {key: value.avg for key, value in avg_loss.items()}
         return avg_loss
-
-
 
     def _save_checkpoint(self, tag):
         state = {

@@ -1,5 +1,7 @@
 import torch
 import numpy as np
+
+from models.utils import get_local_model_dict
 from .base_trainer import BaseTrainer
 from models.builder import get_model, get_bcc
 import torch.nn.functional as F
@@ -73,11 +75,23 @@ class FLACTrainer(BaseTrainer):
     def _setup_models(self):
         super()._setup_models()
 
-        self.bcc_nets = get_bcc(self.cfg, self.num_class)
+        if self.cfg.MITIGATOR.FLAC.BCC_PATH != "":
+            bcc_net_dict = get_local_model_dict(self.cfg.MITIGATOR.FLAC.BCC_PATH)
+            self.bcc_net = get_model(
+                self.cfg.MODEL.TYPE,
+                self.num_class,
+            )
+            self.bcc_net.load_state_dict(bcc_net_dict["model"])
 
-        for _, bcc_net in self.bcc_nets.items():
-            bcc_net.to(self.device)
-            bcc_net.eval()
+            self.bcc_net.to(self.device)
+            self.bcc_net.eval()
+            self.bcc_nets = {self.biases[0]: self.bcc_net}
+        else:
+            self.bcc_nets = get_bcc(self.cfg, self.num_class)
+
+            for _, bcc_net in self.bcc_nets.items():
+                bcc_net.to(self.device)
+                bcc_net.eval()
 
     def _train_iter(self, batch):
         inputs = batch["inputs"].to(self.device)
