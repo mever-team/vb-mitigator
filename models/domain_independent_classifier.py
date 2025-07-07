@@ -2,14 +2,11 @@ from models.builder import get_model
 import torch
 from torch import nn
 
+
 class DomainIndependentClassifier(nn.Module):
     def __init__(self, arch, num_classes, num_domain, pretrained):
         super(DomainIndependentClassifier, self).__init__()
-        self.backbone = get_model(
-            arch,
-            num_classes,
-            pretrained=pretrained
-        )
+        self.backbone = get_model(arch, num_classes, pretrained=pretrained)
         self.domain_classifier_list = nn.ModuleList(
             [
                 nn.Linear(self.backbone.fc.in_features, num_classes)
@@ -21,7 +18,7 @@ class DomainIndependentClassifier(nn.Module):
     def forward(self, x):
         x = self.backbone(x)
         if isinstance(x, tuple):
-                x, _ = x
+            x, _ = x
         logits_per_domain = [
             classifier(x) for classifier in self.domain_classifier_list
         ]

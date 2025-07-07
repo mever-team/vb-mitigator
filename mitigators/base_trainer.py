@@ -7,7 +7,7 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import torch
-from datasets.builder import get_dataset
+from my_datasets.builder import get_dataset
 from models.builder import get_model
 from tools.metrics import metrics_dicts, get_performance
 from tools.metrics.utils import AverageMeter
@@ -88,7 +88,7 @@ class BaseTrainer:
         self._metric_specific_setups()
         self._basic_eval_setups()
         self._method_specific_setups()
-        self._setup_resume()
+        # self._setup_resume()
         show_cfg(cfg, self.logger)
 
     def _setup_resume(self):
@@ -181,6 +181,8 @@ class BaseTrainer:
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.optimizer, T_max=self.cfg.SOLVER.SCHEDULER.T_MAX
             )
+        elif self.cfg.SOLVER.SCHEDULER.TYPE == "None":
+            return
         else:
             raise ValueError(
                 f"Unsupported scheduler type: {self.cfg.SOLVER.SCHEDULER.TYPE}"
@@ -202,7 +204,25 @@ class BaseTrainer:
         self._set_train()
         self.current_lr = self.scheduler.get_last_lr()[0]
         avg_loss = None
-        for batch in self.dataloaders["train"]:
+        show_progress_bar = self.cfg.EXPERIMENT.PROGRESS_BAR
+
+        # Set up the dataloader iterator
+        dataloader_iterator = self.dataloaders["train"]
+
+        # Conditionally wrap the dataloader with tqdm for a progress bar
+        if show_progress_bar:
+            # Create a tqdm progress bar
+            progress_bar = tqdm(
+                dataloader_iterator,
+                # Assumes self.current_epoch and self.epochs are available for a more descriptive bar
+                desc=f"Epoch {getattr(self, 'current_epoch', '?')}/{self.cfg.SOLVER.EPOCHS} Training",
+                unit="batch",
+            )
+        else:
+            # If no progress bar, just use the original dataloader
+            progress_bar = dataloader_iterator
+
+        for batch in progress_bar:
             bsz = batch["targets"].shape[0]
             loss_dict = self._train_iter(batch)
             # initialize if needed
@@ -237,7 +257,25 @@ class BaseTrainer:
             all_data["predictions"] = []
 
             losses = []
-            for batch in self.dataloaders[stage]:
+            show_progress_bar = self.cfg.EXPERIMENT.PROGRESS_BAR
+
+            # Set up the dataloader iterator
+            dataloader_iterator = self.dataloaders[stage]
+
+            # Conditionally wrap the dataloader with tqdm for a progress bar
+            if show_progress_bar:
+                # Create a tqdm progress bar
+                progress_bar = tqdm(
+                    dataloader_iterator,
+                    # Assumes self.current_epoch and self.epochs are available for a more descriptive bar
+                    desc=f"Epoch {getattr(self, 'current_epoch', '?')}/{self.cfg.SOLVER.EPOCHS} Eval on {stage} set",
+                    unit="batch",
+                )
+            else:
+                # If no progress bar, just use the original dataloader
+                progress_bar = dataloader_iterator
+
+            for batch in progress_bar:
                 batch_dict, loss = self._val_iter(batch)
                 losses.append(loss.detach().cpu().numpy())
                 for key, value in batch_dict.items():
@@ -540,7 +578,7 @@ class BaseTrainer:
             max(len(key) for key in log_keys) + 2
         )  # Adjust column width dynamically
 
-        if self.current_epoch == 0:  # Create headers if file is new
+        if self.current_epoch == 1:  # Create headers if file is new
             with open(log_file_path, "a", encoding="utf-8") as writer:
                 # Header
                 header = "".join(f"{key:<{column_width}}" for key in log_keys)
@@ -624,7 +662,10 @@ class BaseTrainer:
         start_epoch = self.current_epoch + 1
         for epoch in range(
             start_epoch,
-            min(start_epoch + self.cfg.EXPERIMENT.EPOCH_STEPS, self.cfg.SOLVER.EPOCHS),
+            min(
+                start_epoch + self.cfg.EXPERIMENT.EPOCH_STEPS,
+                self.cfg.SOLVER.EPOCHS + 1,
+            ),
         ):
             self.current_epoch = epoch
             log_dict = self._train_epoch()

@@ -1,0 +1,22 @@
+EXPERIMENT:
+  NAME: "end"
+  TAG: "dev"
+  PROJECT: "chexpert_nih_baselines"
+DATASET:
+  TYPE: "chexpert_nih"
+  BIASES: ["bias"]
+MITIGATOR:
+  TYPE: "end"
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 20
+  LR: 0.001
+  TYPE: "Adam"
+  WEIGHT_DECAY: 0.0
+  SCHEDULER:
+    LR_DECAY_STAGES: [6, 13]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet18"
+  PRETRAINED: True
+METRIC: "wg_ovr"

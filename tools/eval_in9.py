@@ -5,7 +5,7 @@ from configs.cfg import CFG as cfg
 from torchvision.models import resnet50
 from torch import nn
 import torch
-from datasets.imagenet9 import get_background_challenge_data
+from my_datasets.imagenet9 import get_background_challenge_data
 from tools.metrics import get_performance
 import numpy as np
 

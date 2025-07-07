@@ -1,0 +1,22 @@
+EXPERIMENT:
+  NAME: "erm"
+  TAG: "corr1"
+  PROJECT: "biased_mnist_baselines"
+DATASET:
+  TYPE: "biased_mnist"
+  BIASED_MNIST:
+    CORR: 0.5
+MITIGATOR:
+  TYPE: "erm"
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 100
+  LR: 0.001
+  TYPE: "Adam"
+  SCHEDULER:
+    LR_DECAY_STAGES: [26, 53, 90]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "simple_conv"
+  FREEZE_BACKBONE: True
+METRIC: "acc"

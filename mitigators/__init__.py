@@ -13,6 +13,8 @@ from .erm_tags import ERMTagsTrainer
 from .flacb import FLACBTrainer
 from .jtt import JTTTrainer
 from .softcon import SoftConTrainer
+from .erm_bcc import ERMBCCTrainer
+from .maviasb import MAVIASBTrainer
 
 method_to_trainer = {
     "erm": ERMTrainer,
@@ -29,5 +31,7 @@ method_to_trainer = {
     "end": EndTrainer,
     "erm_tags": ERMTagsTrainer,
     "jtt": JTTTrainer,
-    "softcon": SoftConTrainer
+    "softcon": SoftConTrainer,
+    "erm_bcc": ERMBCCTrainer,
+    "maviasb": MAVIASBTrainer,
 }

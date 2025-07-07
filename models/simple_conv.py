@@ -77,8 +77,9 @@ class SimpleConvNet(nn.Module):
 
 
 class SimpleConvNetMultiHead(nn.Module):
-    def __init__(self, num_classes=10, kernel_size=7, pretrained=False, **kwargs):
+    def __init__(self, num_classes=10, pretrained=False, **kwargs):
         super(SimpleConvNetMultiHead, self).__init__()
+        kernel_size=7
         padding = kernel_size // 2
 
         layer1 = [

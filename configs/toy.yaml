@@ -1,0 +1,20 @@
+EXPERIMENT:
+  NAME: "erm"
+  TAG: "toy"
+  PROJECT: "biased_mnist_baselines"
+DATASET:
+  TYPE: "biased_mnist"
+  BIASES: ["color"]
+MITIGATOR:
+  TYPE: "erm" #flac, badd 
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 6
+  LR: 0.001
+  TYPE: "Adam" # SGD
+  SCHEDULER:
+    LR_DECAY_STAGES: [5]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "simple_conv"
+METRIC: "acc" # wg_ovr

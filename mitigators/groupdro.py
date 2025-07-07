@@ -1,6 +1,5 @@
-
 import os
-from datasets.builder import get_dataset
+from my_datasets.builder import get_dataset
 from tools.utils import load_checkpoint, log_msg, save_checkpoint
 import torch
 import torch.nn as nn
@@ -9,7 +8,7 @@ from .base_trainer import BaseTrainer
 
 
 class GroupDROTrainer(BaseTrainer):
-   
+
     def _setup_criterion(self):
         if self.cfg.SOLVER.CRITERION == "CE":
             self.criterion_train = nn.CrossEntropyLoss(reduction="none")
@@ -17,13 +16,12 @@ class GroupDROTrainer(BaseTrainer):
         else:
             raise ValueError(f"Unsupported criterion type: {self.cfg.SOLVER.CRITERION}")
 
-
     def _method_specific_setups(self):
         self.adv_probs = torch.ones(self.num_group, device=self.device) / self.num_group
         self.group_range = torch.arange(
             self.num_group, dtype=torch.long, device=self.device
         ).unsqueeze(1)
-    
+
     def _setup_dataset(self):
         dataset = get_dataset(self.cfg)
         self.num_class = dataset["num_class"]
@@ -36,7 +34,6 @@ class GroupDROTrainer(BaseTrainer):
         self.num_biases = self.num_group / self.num_class
         return
 
-
     def _train_iter(self, batch):
         inputs = batch["inputs"].to(self.device)
         targets = batch["targets"].to(self.device)
@@ -45,7 +42,6 @@ class GroupDROTrainer(BaseTrainer):
         group_index = targets * self.num_biases
         for i, bias in enumerate(biases):
             group_index += bias * (self.num_biases ** (i + 1))
-
 
         group_index = group_index.to(device=self.device, dtype=torch.long)
         self.optimizer.zero_grad()
@@ -71,7 +67,6 @@ class GroupDROTrainer(BaseTrainer):
         self._loss_backward(loss)
         self._optimizer_step()
         return {"train_cls_loss": loss}
-
 
     def _save_checkpoint(self, tag):
         state = {

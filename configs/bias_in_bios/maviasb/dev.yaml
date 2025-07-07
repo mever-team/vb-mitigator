@@ -1,0 +1,29 @@
+EXPERIMENT:
+  NAME: "maviasb"
+  TAG: "dev"
+  PROJECT: "bias_in_bios_baselines"
+DATASET:
+  TYPE: "bias_in_bios"
+  BIASES: ["gender"]
+  NUM_WORKERS: 0
+MITIGATOR:
+  TYPE: "maviasb"
+  MAVIASB: 
+    BCC_PATH: "./output/bias_in_bios_baselines/bcc/erm/best"
+    LOSS:
+      ALPHA: 0.01
+      LAMBDA: 0.5
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 50
+  LR: 0.001
+  TYPE: "Adam"
+  WEIGHT_DECAY: 0.0
+  SCHEDULER:
+    LR_DECAY_STAGES: [16, 33]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "classification_head"
+METRIC: "wg_ovr"
+LOG:
+  SAVE_CRITERION: "test"

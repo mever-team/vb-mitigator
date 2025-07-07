@@ -1,0 +1,29 @@
+EXPERIMENT:
+  NAME: "maviasb"
+  TAG: "dev"
+  PROJECT: "urbansounds58_baselines"
+DATASET:
+  TYPE: "urbansounds58"
+  BIASES: ["bias"]
+  NUM_WORKERS: 0
+MITIGATOR:
+  TYPE: "maviasb"
+  MAVIASB: 
+    BCC_PATH: "./output/urbansounds58_baselines/bcc/erm/latest"
+    LOSS:
+      ALPHA: 0.001
+      LAMBDA: 0.7
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 100
+  LR: 0.001
+  TYPE: "Adam"
+  WEIGHT_DECAY: 0.0
+  SCHEDULER:
+    LR_DECAY_STAGES: [66]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "cnn_classifier_mfcc"
+METRIC: "wg_ovr"
+LOG:
+  SAVE_CRITERION: "test"

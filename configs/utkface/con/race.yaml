@@ -1,0 +1,22 @@
+EXPERIMENT:
+  NAME: "con"
+  TAG: "race"
+  PROJECT: "utkface_baselines"
+DATASET:
+  TYPE: "utkface"
+  UTKFACE:
+    BIAS: "race"
+MITIGATOR:
+  TYPE: "con"
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 200
+  LR: 0.1
+  TYPE: "SGD"
+  WEIGHT_DECAY: 1e-6
+  SCHEDULER:
+    LR_DECAY_STAGES: [60, 130]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet18"
+METRIC: "wg_ovr"

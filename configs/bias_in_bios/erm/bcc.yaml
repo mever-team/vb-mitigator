@@ -1,0 +1,28 @@
+EXPERIMENT:
+  NAME: "erm"
+  TAG: "bcc"
+  PROJECT: "bias_in_bios_baselines"
+DATASET:
+  TYPE: "bias_in_bios"
+  NUM_WORKERS: 0
+  BIASES: ["gender"]
+  BIAS_IN_BIOS:
+    BIAS: "profession"
+    TARGET: "gender"
+MITIGATOR:
+  TYPE: "erm"
+SOLVER:
+  BATCH_SIZE: 64
+  EPOCHS: 10
+  LR: 0.001
+  TYPE: "Adam"
+  WEIGHT_DECAY: 0.0
+  SCHEDULER:
+    LR_DECAY_STAGES: [3, 6]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "classification_head"
+METRIC: "acc"
+LOG:
+  SAVE_CRITERION: "test"
+  TRAIN_PERFORMANCE: True

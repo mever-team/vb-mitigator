@@ -1,0 +1,26 @@
+EXPERIMENT:
+  NAME: "mhmavias"
+  TAG: "race"
+  PROJECT: "utkface_baselines"
+DATASET:
+  TYPE: "utkface"
+  UTKFACE:
+    BIAS: "race"
+MITIGATOR:
+  TYPE: "mhmavias"
+  MHMAVIAS:
+    LOSS:
+      ALPHA: 0.01
+      LAMBDA: 0.5
+SOLVER:
+  BATCH_SIZE: 128
+  EPOCHS: 40
+  LR: 0.001
+  TYPE: "Adam"
+  SCHEDULER:
+    LR_DECAY_STAGES: [13, 26]
+    LR_DECAY_RATE: 0.1
+MODEL:
+  TYPE: "resnet18_mh"
+  PRETRAINED: True
+METRIC: "wg_ovr"
