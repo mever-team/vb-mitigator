@@ -1,4 +1,3 @@
-from my_datasets.bias_in_bios import get_bias_in_bios_loaders
 from my_datasets.celeba import get_celeba
 from my_datasets.chexpert_nih import get_chexpert_nih_loader
 from my_datasets.cifar100 import get_cifar100_loaders
@@ -18,7 +17,6 @@ from .utk_face import get_utk_face
 from .waterbirds import get_waterbirds
 from .cifar10 import get_cifar10_loaders
 from .stanford_dogs import get_stanford_dogs_loader
-from .jigsaw_toxic_comments import get_jigsaw_toxic_comments_loaders
 import torch
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
@@ -938,6 +936,8 @@ def get_dataset(cfg):
             dataset["dataloaders"]["tag_train"] = tag_train_loader
             dataset["dataloaders"]["tag_test"] = tag_test_loader
     elif dataset_name == "jigsaw_toxic_comments":
+        from .jigsaw_toxic_comments import get_jigsaw_toxic_comments_loaders
+
         if method_name == "groupdro":
             (
                 train_loader,
@@ -1007,6 +1007,8 @@ def get_dataset(cfg):
                 "this is a text dataset - cannot extract tags like images. Needs a new implementation."
             )
     elif dataset_name == "bias_in_bios":
+        from my_datasets.bias_in_bios import get_bias_in_bios_loaders
+
         if method_name == "groupdro":
             (
                 train_loader,

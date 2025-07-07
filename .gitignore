@@ -4,6 +4,7 @@ __pycache__/
 *.pyd
 pretrained/*
 data/*/*
+data/biased_mnist/pickles/
 !data/*/unique_tags_per_class.csv
 !data/*/train_tags.csv
 !data/*/relevant_tags/

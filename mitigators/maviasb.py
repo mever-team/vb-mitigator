@@ -108,7 +108,8 @@ class MAVIASBTrainer(BaseTrainer):
         self.optimizer.zero_grad(set_to_none=True)
         self.optimizer_projection.zero_grad(set_to_none=True)
         with torch.no_grad():
-            _, b_feats = self.bcc_net(inputs)
+            for _, bcc_net in self.bcc_nets.items():
+                _, b_feats = bcc_net(inputs)
         b_feats = self.proj_net(b_feats)
 
         logits, logits2 = self.model.mavias_forward(inputs, b_feats)
@@ -133,10 +134,12 @@ class MAVIASBTrainer(BaseTrainer):
 
     def _set_train(self):
         self.proj_net.train()
-        self.bcc_net.eval()
+        for _, bcc_net in self.bcc_nets.items():
+            bcc_net.eval()
         return super()._set_train()
 
     def _set_eval(self):
         self.proj_net.eval()
-        self.bcc_net.eval()
+        for _, bcc_net in self.bcc_nets.items():
+            bcc_net.eval()
         return super()._set_eval()
