@@ -1,6 +1,8 @@
 <div align=center><img src="assets/vb-mitigator logo_250.png" width="20%" ><div align=left>
 
 # Visual Bias Mitigator (VB-Mitigator)
+[![MAI_BIAS toolkit](https://img.shields.io/badge/MAI_BIAS-fairness_tools-blue?logo=github)](https://mammoth-eu.github.io/mammoth-commons/index.html)
+
 
 
 The Visual Bias Mitigator is an open-source framework designed to empower researchers in the field of bias mitigation in  computer vision. This codebase provides a comprehensive environment where users can easily implement, run, and evaluate existing visual bias mitigation methods.
