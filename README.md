@@ -5,7 +5,7 @@
 
 
 
-The Visual Bias Mitigator is an open-source framework designed to empower researchers in the field of bias mitigation in  computer vision. This codebase provides a comprehensive environment where users can easily implement, run, and evaluate existing visual bias mitigation methods.
+<!--The Visual Bias Mitigator is an open-source framework designed to empower researchers in the field of bias mitigation in  computer vision. This codebase provides a comprehensive environment where users can easily implement, run, and evaluate existing visual bias mitigation methods.
 
 With the increasing awareness of bias in AI systems, it is crucial for researchers to have access to robust tools that facilitate the exploration and development of mitigation approaches. The Visual Bias Mitigator (VB-Mitigator) serves this purpose by offering:
 
@@ -13,9 +13,47 @@ With the increasing awareness of bias in AI systems, it is crucial for researche
 - 🔧 **Extensibility**: Researchers can exploit this code-base to develop custom bias mitigation approaches tailored to their specific needs. The framework is designed with flexibility in mind, enabling easy integration of new approaches.
 - 📊 **Performance Comparison**: The framework facilitates the performance comparison between custom methods and state-of-the-art. 
 
-The aim of this repository is to facilitate research in the domain of visual bias mitigation. By providing a comprehensive codebase that allows researchers to easily implement and build upon existing methodologies, we encourage the development of new approaches for addressing biases in computer vision tasks.
+The aim of this repository is to facilitate research in the domain of visual bias mitigation. By providing a comprehensive codebase that allows researchers to easily implement and build upon existing methodologies, we encourage the development of new approaches for addressing biases in computer vision tasks.--> 
 
-## Quickstart
+
+## 🌍 Overview
+**VB-Mitigator** is an open-source **platform for evaluating, comparing, and developing visual bias mitigation methods** in computer vision.  
+
+It empowers researchers, engineers, and industry teams to **build fairer AI systems**, benchmark state-of-the-art approaches, and innovate new strategies to address bias in real-world models.
+
+The framework provides:
+
+- 🚀 **Pre-implemented Methods**: Use or replicate established bias mitigation approaches like BAdd, MAVias, and FLAC  
+- 🔧 **Extensibility**: Integrate custom methods or datasets with minimal effort  
+- 📊 **Performance Comparison**: Evaluate your approach against baselines across multiple datasets and metrics  
+
+VB-Mitigator is designed to **bridge research and real-world deployment**, making it easy to explore and reduce bias in computer vision systems.
+
+---
+
+## 🎯 Who is this for?
+- **AI researchers** exploring bias mitigation and fairness  
+- **ML engineers** building attribute classification, face recognition, or other CV pipelines  
+
+---
+
+## 💡 Why VB-Mitigator matters
+- ✅ **Accelerates research** by providing a ready-to-use framework  
+- ✅ **Supports reproducibility** with prebuilt methods and datasets  
+- ✅ **Flexible platform** for both experimentation and benchmarking  
+
+---
+
+## 🔥 Key Features
+- Collection of **state-of-the-art bias mitigation methods**  
+- **Easy-to-extend codebase** for custom approaches  
+- **Dataset-agnostic** evaluation pipeline  
+- **Standardized metrics and logs** for fair comparison  
+- Supports **rapid prototyping and reproducibility**  
+
+---
+
+## ⚡ Quick Start
 
 Get started with Visual Bias Mitigator quickly:
 
@@ -64,11 +102,22 @@ The output is stored in the `outputs/utkface_baselines/badd` directory.
 │   │   │   └── train.events
 ```
 
-## Documentation
+## 📖 Documentation
 You can find the complete documentation for VB-Mitigator [here](https://vb-mitigator.readthedocs.io/).
-## Citations
+
+## 🧩 Part of a Larger Ecosystem
+VB-Mitigator is part of the MAI-BIAS Toolkit, which comprises numerous modules that collectively form a complete pipeline for **building, analyzing, and validating fair AI systems**.
+
+## 📖 Citations
 
 ```
+@article{sarridis2025vb,
+  title={Vb-mitigator: An open-source framework for evaluating and advancing visual bias mitigation},
+  author={Sarridis, Ioannis and Koutlis, Christos and Papadopoulos, Symeon and Diou, Christos},
+  journal={arXiv preprint arXiv:2507.18348},
+  year={2025}
+}
+
 @article{sarridis2024flac,
   title={Flac: Fairness-aware representation learning by suppressing attribute-class associations},
   author={Sarridis, Ioannis and Koutlis, Christos and Papadopoulos, Symeon and Diou, Christos},
@@ -94,7 +143,7 @@ You can find the complete documentation for VB-Mitigator [here](https://vb-mitig
 
 **Maintainer:** Ioannis Sarridis (gsarridis@iti.gr)<br>
 
-## Acknowledgments
+## 🙏 Acknowledgments
 This research was supported by the EU Horizon Europe projects MAMMOth
 (Grant Agreement 101070285) and ELIAS (Grant Agreement 101120237).
 <div align="center"> <img src="assets/mammoth_logo.svg" width="20%" alt="MAMMOth Project Logo"> <img src="assets/elias_logo.png" width="20%" alt="ELIAS Project Logo"> </div>
