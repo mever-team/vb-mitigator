@@ -3,7 +3,14 @@
 # Visual Bias Mitigator (VB-Mitigator)
 [![MAI_BIAS toolkit](https://img.shields.io/badge/MAI_BIAS-fairness_tools-blue?logo=github)](https://mammoth-eu.github.io/mammoth-commons/index.html)
 
+This software is part of MAI-BIAS; a low-code toolkit for
+fairness analysis and mitigation, with an accompanying suite of coding
+tools. Our ecosystem operates in multidimensional and multi-attribute
+settings (safeguarding multiple races, genders, etc), and across multiple
+data modalities (like tabular data, images, text, graphs). Learn more
+[here](https://mammoth-eu.github.io/mammoth-commons/index.html).
 
+---
 
 <!--The Visual Bias Mitigator is an open-source framework designed to empower researchers in the field of bias mitigation in  computer vision. This codebase provides a comprehensive environment where users can easily implement, run, and evaluate existing visual bias mitigation methods.
 
@@ -105,8 +112,6 @@ The output is stored in the `outputs/utkface_baselines/badd` directory.
 ## 📖 Documentation
 You can find the complete documentation for VB-Mitigator [here](https://vb-mitigator.readthedocs.io/).
 
-## 🧩 Part of a Larger Ecosystem
-VB-Mitigator is part of the MAI-BIAS Toolkit, which comprises numerous modules that collectively form a complete pipeline for **building, analyzing, and validating fair AI systems**.
 
 ## 📖 Citations
 
