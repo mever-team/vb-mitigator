@@ -150,5 +150,5 @@ You can find the complete documentation for VB-Mitigator [here](https://vb-mitig
 
 ## 🙏 Acknowledgments
 This research was supported by the EU Horizon Europe projects MAMMOth
-(Grant Agreement 101070285) and ELIAS (Grant Agreement 101120237).
-<div align="center"> <img src="assets/mammoth_logo.svg" width="20%" alt="MAMMOth Project Logo"> <img src="assets/elias_logo.png" width="20%" alt="ELIAS Project Logo"> </div>
+(grant no. 101070285), ELIAS (grant no. 101120237), and ELLIOT (grant no. 101214398).
+<div align="center"> <img src="assets/mammoth_logo.svg" width="20%" alt="MAMMOth Project Logo"> <img src="assets/elias_logo.png" width="20%" alt="ELIAS Project Logo"> <img src="assets/logo_elliot.png" width="20%" alt="ELLIOT Project Logo"></div>
