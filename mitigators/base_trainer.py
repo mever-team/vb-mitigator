@@ -1,5 +1,6 @@
 import ast
 import os
+import argparse
 
 import pandas as pd
 
@@ -22,6 +23,8 @@ from configs.cfg import show_cfg
 from ram.models import ram_plus
 import mitigators.losses as losses
 
+
+torch.serialization.add_safe_globals([argparse.Namespace]) # needed to allow recent versions of torch to load the whole model
 
 class BaseTrainer:
     """

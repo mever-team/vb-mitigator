@@ -76,7 +76,7 @@ You can use either `pip` or `conda` to create a virtual environment and install 
 
 ```bash
 # create a virtual conda environment
-conda create -n vb-mitigator python=3.11
+conda create -n vb-mitigator python=3.14
 
 # activate the environment
 conda activate vb-mitigator
@@ -88,25 +88,26 @@ pip install -r requirements.txt
 ### 3. Run a Sample Script
 
 ```bash
-# run BAdd method on UTKFace dataset
-bash ./scripts/utkface/badd/badd.sh
+# train the BAdd method on the UTKFace dataset
+python -m tools.train --cfg configs/utkface/badd/race.yaml
 ```
 
 ### 4. Check Logs for Results and Metrics  
 
-The output is stored in the `outputs/utkface_baselines/badd` directory.
+The output is stored in the `outputs/utkface_baselines/race/badd` directory.
 
 #### **Output Structure:**
 
 ```
 ├── outputs
 │   ├── utkface_baselines
-│   │   ├── badd
-│   │   │   ├── logs.csv
-│   │   │   ├── out.log
-│   │   │   ├── best.pth
-│   │   │   ├── latest.pth
-│   │   │   └── train.events
+│   │   ├── race
+│   │   │   ├── badd
+│   │   │   │   ├── logs.csv
+│   │   │   │   ├── out.log
+│   │   │   │   ├── best.pth
+│   │   │   │   ├── latest.pth
+│   │   │   │   └── train.events
 ```
 
 ## 📖 Documentation
