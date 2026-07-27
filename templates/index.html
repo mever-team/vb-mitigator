@@ -50,7 +50,7 @@
 <body>
 <main>
 
-<h1>Experiment Setup Pipeline</h1>
+<h1>vb-mitigator helper</h1>
 
 <section>
 <h2>① Components</h2>
@@ -322,8 +322,14 @@ function runTrain() {
     const b = $("run-btn");
 
     if (currentRunId) {
+        b.disabled = true;
+        clearTimeout(pollTimer);
         fetch(`/api/run/${currentRunId}/stop`, { method: "POST" });
-        b.disabled = true; // prevent repeated clicks until pollRun notices
+        b.textContent = "Train";
+        currentRunId = null;
+        b.disabled = false;
+        const c=$("console");
+        c.textContent=renderTerminal("Aborted");
         return;
     }
 
