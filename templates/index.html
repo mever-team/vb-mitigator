@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Experiment Setup Pipeline</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;font:14px Inter,system-ui,sans-serif;color:#222}main{max-width:1050px;margin:auto;padding:32px}h1{margin:0 0 24px;font-size:30px}section{background:#fff;border:1px solid #ddd;border-radius:14px;padding:22px;margin-bottom:22px;box-shadow:0 3px 10px rgba(0,0,0,.05)}h2{margin:0 0 18px;font-size:19px}.row{display:flex;gap:12px;align-items:center;margin-bottom:12px}label{width:120px;font-weight:600}select,input[type=text],textarea{flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font:inherit}button{padding:10px 15px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer}button:hover:not(:disabled){background:#1d4ed8}button:disabled{opacity:.5;cursor:not-allowed}ul{list-style:none;padding:0;margin:0}li{display:flex;cursor:pointer;justify-content:space-between;align-items:center;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:2px;transition:.15s}li:hover{background:#f8fafc}li.selected{border-color:#2563eb;background:#eff6ff}.left{display:flex;align-items:center;gap:10px}.match{color:#16a34a}.nomatch{color:#dc2626}.small{font-size:12px;color:#666}.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);justify-content:center;align-items:center}.modal-bg.open{display:flex}.modal{background:#fff;width:min(900px,90vw);padding:20px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.25)}textarea{width:100%;height:360px;font:13px monospace}.actions{text-align:right;margin-top:12px}#console{height:350px;overflow:auto;background:#111827;color:#e5e7eb;border-radius:8px;padding:14px;font:12px monospace;white-space:pre-wrap}
+#picker-list li span:last-child{ visibility:hidden;}
+#picker-list li:hover span:last-child{visibility:visible;}
+#config-list li span:last-child{ visibility:hidden;}
+#config-list li:hover span:last-child{visibility:visible;}
+.modal-bg{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    justify-content:center;
+    align-items:center;
+    z-index:100;
+}
+
+#picker-search{
+    width:100%;
+    margin-bottom:12px;
+    padding:10px 14px;
+    border:1px solid #cfd6e4;
+    border-radius:10px;
+    outline:none;
+    font-size:14px;
+    background:#fafbfc;
+    transition:.15s;
+}
+
+#picker-search:focus{
+    border-color:#2563eb;
+    background:#fff;
+    box-shadow:0 0 0 3px rgba(37,99,235,.15);
+}
+
+#picker-modal{
+    z-index:100;
+}
+#py-modal,
+#cfg-modal,
+#new-cfg-modal{
+    z-index:200;
+}
+</style>
+</head>
+<body>
+<main>
+
+<h1>vb-mitigator helper</h1>
+
+<section>
+<h2>① Components</h2>
+<div class="row">
+  <label>Data</label>
+  <input id="field-data" readonly onclick="openPicker('data')">
+</div>
+<div class="row">
+  <label>Bias mitigator</label>
+  <input id="field-mitigator" readonly onclick="openPicker('mitigator')">
+</div>
+</section>
+
+<section>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+<h2 style="margin:0">② Configurations</h2>
+<button onclick="newConfig()">+</button>
+</div>
+<ul id="config-list"></ul>
+<div style="margin-top:15px">
+<button id="run-btn" onclick="runTrain()" disabled>Train</button>
+</div>
+</section>
+
+<section>
+<h2>③ Output</h2>
+<p id="run-cmd" class="small">No training started.</p>
+<div id="console"></div>
+</section>
+
+<div class="modal-bg" id="py-modal">
+<div class="modal" style="height:80%">
+<h2 id="py-modal-title"></h2>
+<textarea id="py-modal-content"></textarea>
+<div class="actions">
+<button onclick="closeModal('py-modal')">Cancel</button>
+<button onclick="savePy()">Save</button>
+</div>
+</div>
+</div>
+
+<div class="modal-bg" id="cfg-modal">
+<div class="modal" style="height:80%">
+<h2 id="cfg-modal-title"></h2>
+<textarea id="cfg-modal-content"></textarea>
+<div class="actions">
+<span id="cfg-modal-error" style="color:#d00;float:left"></span>
+<button onclick="closeModal('cfg-modal')">Cancel</button>
+<button onclick="saveConfig()">Save</button>
+</div>
+</div>
+</div>
+
+<div class="modal-bg" id="new-cfg-modal">
+<div class="modal" style="max-width:500px">
+<h2>New configuration</h2>
+<input id="new-cfg-name" type="text" placeholder="example.yaml">
+<div class="actions">
+<button onclick="closeModal('new-cfg-modal')">Cancel</button>
+<button onclick="createConfig()">Create</button>
+</div>
+</div>
+</div>
+
+<div class="modal-bg" id="picker-modal">
+  <div class="modal" style="height:80%">
+    <h2 id="picker-title"></h2>
+    <input id="picker-search" placeholder="🔍 Search...">
+    <ul id="picker-list" style="max-height:500px;overflow-y: scroll;scroll-behavior: smooth;"></ul>
+    <div class="actions">
+      <button onclick="closeModal('picker-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let state={data:null,mitigator:null,config:null},editingPyKind,editingPyName,editingCfgName,pollTimer;
+
+const $=id=>document.getElementById(id);
+
+const openModal=id=>$(id).classList.add("open");
+const closeModal=id=>$(id).classList.remove("open");
+
+let pickerKind = null;
+
+function openPicker(kind) {
+    pickerKind = kind;
+    $("picker-title").textContent = "Select " + kind.charAt(0).toUpperCase() + kind.slice(1);
+    const search = $("picker-search");
+    search.value = "";
+    const render = () => {
+        const q = search.value.toLowerCase();
+        const ul = $("picker-list");
+        ul.innerHTML = "";
+        lists[kind]
+            .filter(x => x.toLowerCase().includes(q))
+            .forEach(item => {
+                const li = document.createElement("li");
+                const name = document.createElement("span");
+                name.textContent = item;
+                name.style.flex = "1";
+
+                const edit = document.createElement("span");
+                edit.textContent = "✏️";
+                edit.style.cursor = "pointer";
+                edit.onclick = e => {
+                    e.stopPropagation();
+                    state[kind] = item;
+                    editPy(kind);
+                };
+                li.append(name, edit);
+                if (item === state[kind])
+                    li.classList.add("selected");
+                li.onclick = () => {
+                    state[kind] = item;
+                    $(`field-${kind}`).value = item;
+                    loadConfigs();
+                    closeModal("picker-modal");
+                };
+                ul.appendChild(li);
+            });
+        const add = document.createElement("li");
+        add.style.justifyContent = "center";
+        add.style.fontWeight = "600";
+        add.textContent = "➕ Create new…";
+        add.onclick = () => {
+            closeModal("picker-modal");
+            createPy(kind);
+        };
+        ul.appendChild(add);
+    };
+
+    search.oninput = render;
+    render();
+    openModal("picker-modal");
+    setTimeout(() => search.focus(), 20);
+}
+
+function createPy(kind){
+    const name = prompt(`New ${kind} name:`);
+    if(!name) return;
+    fetch(`/api/file/${kind}/new`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name})
+    })
+    .then(r=>r.json())
+    .then(()=>{
+        loadLists();
+        state[kind]=name;
+        $(`field-${kind}`).value=name;
+        editPy(kind);
+    });
+}
+
+function editPy(kind) {
+    const name = state[kind];
+    if (!name) return;
+
+    editingPyKind = kind;
+    editingPyName = name;
+
+    fetch(`/api/file/${kind}/${name}`)
+        .then(r => r.json())
+        .then(j => {
+            $("py-modal-title").textContent = `Code for ${kind}: ${name}.py`;
+            $("py-modal-content").value = j.content || "";
+            openModal("py-modal");
+        });
+}
+
+function savePy() {
+  fetch(`/api/file/${editingPyKind}/${editingPyName}`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({content:$("py-modal-content").value})
+  }).then(r=>r.json()).then(()=>closeModal("py-modal"));
+}
+
+function loadConfigs() {
+if (!state.data || !state.mitigator) {
+  $("config-list").innerHTML = "";
+  return;
+}
+fetch(`/api/configs?data=${encodeURIComponent(state.data)}&mitigator=${encodeURIComponent(state.mitigator)}`)
+  .then(r => r.json())
+  .then(j => {
+      const ul = $("config-list");
+      ul.innerHTML = "";
+      j.items.forEach(i => {
+        const li = document.createElement("li");
+        if (i.name === state.config) li.classList.add("selected");
+        const name = document.createElement("span");
+        name.textContent = i.name;
+        name.style.flex = "1";
+        const edit = document.createElement("span");
+        edit.textContent = "✏️";
+        edit.style.cursor = "pointer";
+        edit.onclick = e => {
+            e.stopPropagation();
+            editConfig(i.name);
+        };
+        li.append(name, edit);
+        li.onclick = () => selectConfig(i.name);
+        ul.appendChild(li);
+    });
+  });
+}
+
+function selectConfig(n){
+  state.config=n;
+  $("run-btn").disabled=false;
+  loadConfigs();
+}
+
+function editConfig(n){
+  editingCfgName=n;
+  fetch(`/api/config/${n}?data=${encodeURIComponent(state.data)}&mitigator=${encodeURIComponent(state.mitigator)}`)
+  .then(r=>r.json())
+  .then(j=>{
+    $("cfg-modal-title").textContent=`Edit ${n}`;
+    $("cfg-modal-content").value=j.content||"";
+    $("cfg-modal-error").textContent="";
+    openModal("cfg-modal");
+  });
+}
+
+function saveConfig(){
+  fetch(`/api/config?data=${encodeURIComponent(state.data)},mitigator=${encodeURIComponent(state.mitigator)}`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({content:$("cfg-modal-content").value})
+    }).then(r=>r.json()).then(j=>{
+    if(j.error){$("cfg-modal-error").textContent=j.error+(j.detail?": "+j.detail:"");return;}
+    closeModal("cfg-modal");
+    loadConfigs();
+  });
+}
+
+function newConfig(){
+$("new-cfg-name").value="";
+openModal("new-cfg-modal");
+}
+
+function createConfig(){
+  const n=$("new-cfg-name").value.trim();
+  if(!n)return;
+  fetch(`/api/config/new?data=${encodeURIComponent(state.data)},mitigator=${encodeURIComponent(state.mitigator)}`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name:n})}
+  )
+  .then(r=>r.json())
+  .then(j=>{
+      if(j.error) return alert(j.error);
+      closeModal("new-cfg-modal");
+      loadConfigs();
+      editConfig(j.name);
+    });
+}
+
+function renderTerminal(t){
+  return t.split("\n").map(l=>l.split("\r").pop()).join("\n");
+}
+
+let currentRunId = null;
+
+function runTrain() {
+    const b = $("run-btn");
+
+    if (currentRunId) {
+        b.disabled = true;
+        clearTimeout(pollTimer);
+        fetch(`/api/run/${currentRunId}/stop`, { method: "POST" });
+        b.textContent = "Train";
+        currentRunId = null;
+        b.disabled = false;
+        const c=$("console");
+        c.textContent=renderTerminal("Aborted");
+        return;
+    }
+
+    if (!state.config) return;
+
+    b.disabled = true;
+
+    fetch(`/api/run/train/${state.config}?data=${encodeURIComponent(state.data)}&mitigator=${encodeURIComponent(state.mitigator)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config: state.config })
+    })
+    .then(r => r.json())
+    .then(j => {
+        if (j.error) {
+            b.disabled = false;
+            return alert(j.error);
+        }
+
+        currentRunId = j.run_id;
+        b.textContent = "Stop";
+        b.disabled = false;
+
+        $("run-cmd").textContent = j.cmd;
+        $("console").textContent = "";
+        clearTimeout(pollTimer);
+        pollRun(j.run_id);
+    });
+}
+
+function pollRun(id){
+  fetch(`/api/run/${id}`)
+  .then(r=>r.json())
+  .then(j=>{
+    const c=$("console");
+    c.textContent=renderTerminal(j.output||"");
+    c.scrollTop=c.scrollHeight;
+    if(j.running)pollTimer=setTimeout(()=>pollRun(id),1000);
+    else {
+        c.textContent += `\n\n[process finished, exit code ${j.returncode}]`;
+        currentRunId = null;
+        const b = $("run-btn");
+        b.textContent = "Train";
+        b.disabled = !state.config;
+    }
+  });
+}
+
+const lists = {data: [], mitigator: []};
+async function loadLists(){
+    for(const k of ["data","mitigator"]){
+        const r=await fetch(`/api/list/${k}`);
+        const j=await r.json();
+        lists[k]=j.items;
+        if(j.items.length){
+            state[k]=j.items[0];
+            $(`field-${k}`).value=j.items[0];
+        }
+    }
+    loadConfigs();
+}
+loadLists();
+</script>
+
+</main>
+</body>
+</html>
