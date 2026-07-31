@@ -1,1 +1,0 @@
-python tools/train.py --cfg configs/fb_biased_mnist/mavias/dev.yaml

@@ -1,1 +1,0 @@
-python tools/train.py --cfg configs/urbancars/mavias/eval_erm.yaml

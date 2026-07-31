@@ -1,27 +1,45 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""Sphinx configuration for VB-Mitigator."""
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import os
+import sys
 
-project = "Visual Bias Mitigator"
-copyright = "2025, Ioannis Sarridis"
+sys.path.insert(0, os.path.abspath("../../src"))
+
+project = "VB-Mitigator"
 author = "Ioannis Sarridis"
+copyright = "2026, Ioannis Sarridis"
 
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+try:
+    from vbmitigator import __version__ as release
+except Exception:  # pragma: no cover
+    release = "0.1.0"
 
-extensions = []
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+    "myst_parser",
+]
 
+# MyST (Markdown) niceties: ::: admonitions, definition lists, auto anchors.
+myst_enable_extensions = ["colon_fence", "deflist"]
+myst_heading_anchors = 3
+
+source_suffix = {".rst": "restructuredtext", ".md": "markdown"}
+autodoc_mock_imports = ["torch", "torchvision", "ram", "ollama", "transformers"]
+
+# --- HTML output ---
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
+html_logo = "_static/logo.png"
+html_favicon = "_static/logo.png"
+html_title = "VB-Mitigator"
+html_theme_options = {
+    "logo_only": False,
+    "collapse_navigation": False,
+    "navigation_depth": 3,
+    "style_nav_header_background": "#0e8f86",
+}
 templates_path = ["_templates"]
 exclude_patterns = []
-
-
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
-html_theme = "sphinx_rtd_theme"
-html_logo = "_static/vb-mitigator logo_250.png"
-html_static_path = ["_static"]

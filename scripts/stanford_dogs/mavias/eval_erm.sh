@@ -1,1 +1,0 @@
-python tools/train.py --cfg configs/stanford_dogs/mavias/eval_erm.yaml

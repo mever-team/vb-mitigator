@@ -1,15 +1,35 @@
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-pretrained/*
-data/*/*
-data/biased_mnist/pickles/
-!data/*/unique_tags_per_class.csv
-!data/*/train_tags.csv
-!data/*/relevant_tags/
-!data/pickles/
-!data/clusters/
-/output/
-/slurm/
-/tmp/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Project data & outputs (never commit large artifacts)
+data/
+outputs/
+output/
+pretrained/
+saved_models/
+*.pth
+*.pt
+wandb/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Docs build
+docs/build/
+docs/_build/

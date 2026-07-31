@@ -1,1 +1,0 @@
-python tools/train.py --cfg configs/waterbirds/erm/dev.yaml
