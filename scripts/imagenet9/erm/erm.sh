@@ -1,1 +1,0 @@
-python tools/train.py --cfg configs/imagenet9/erm/dev.yaml

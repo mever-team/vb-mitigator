@@ -1,1 +1,0 @@
-python tools/train.py --cfg configs/cifar100/erm/dev.yaml

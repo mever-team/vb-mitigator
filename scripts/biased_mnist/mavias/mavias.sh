@@ -1,1 +1,0 @@
-python tools/train.py --cfg configs/biased_mnist/mavias/dev.yaml

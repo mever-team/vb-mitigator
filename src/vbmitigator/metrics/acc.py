@@ -1,0 +1,37 @@
+import numpy as np
+
+from .registry import register_metric
+
+
+@register_metric("acc", performance="accuracy", best="high")
+def acc(data_dict):
+    predictions = data_dict["predictions"]
+    targets = data_dict["targets"]
+    accuracy = (predictions == targets).mean() * 100
+    return {"accuracy": accuracy}
+
+
+@register_metric("acc_per_class", performance="accuracy", best="high")
+def acc_per_class(data_dict):
+    predictions = data_dict["predictions"]
+    targets = data_dict["targets"]
+    accuracy = (predictions == targets).mean() * 100
+    # Get unique classes
+    classes = np.unique(targets)
+
+    # Initialize a dictionary to store accuracy per class
+    acc_dict = {}
+
+    # Calculate accuracy per class
+    for i in classes:
+        # Find indices of the current class in targets
+        class_indices = targets == i
+
+        # Calculate accuracy for this class
+        class_accuracy = (
+            predictions[class_indices] == targets[class_indices]
+        ).mean() * 100
+        acc_dict[f"accuracy_{i}"] = class_accuracy
+    acc_dict["accuracy"] = accuracy
+
+    return acc_dict

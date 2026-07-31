@@ -1,0 +1,111 @@
+"""
+Module for MAVIASTrainer class and related functions.
+"""
+
+
+import torch
+import torch.nn.functional as F
+
+from vbmitigator.models.builder import get_bcc, get_local_bccs, get_model
+from vbmitigator.models.simple_mlp import SimpleMLP
+
+from .base_trainer import BaseTrainer
+
+
+class MAVIASBTrainer(BaseTrainer):
+
+    def _setup_models(self):
+        self.model = get_model(
+            self.cfg.MODEL.TYPE, self.num_class, pretrained=self.cfg.MODEL.PRETRAINED
+        )
+
+        self.model.to(self.device)
+
+        bcc_paths = list(self.cfg.MITIGATOR.MAVIASB.BCC_PATHS)
+        if not bcc_paths and self.cfg.MITIGATOR.MAVIASB.BCC_PATH != "":
+            bcc_paths = [self.cfg.MITIGATOR.MAVIASB.BCC_PATH]
+
+        if bcc_paths:
+            self.bcc_nets = get_local_bccs(
+                self.cfg, bcc_paths, self.num_class, self.device, self.biases
+            )
+        else:
+            self.bcc_nets = get_bcc(self.cfg, self.num_class)
+
+            for _, bcc_net in self.bcc_nets.items():
+                bcc_net.to(self.device)
+                bcc_net.eval()
+
+        try:
+            in_features = self.model.fc.in_features
+        except:
+            in_features = 512
+        self.proj_net = SimpleMLP(in_features, in_features)
+        self.proj_net.to(self.device)
+
+    def _setup_optimizer(self):
+        super()._setup_optimizer()
+        parameters_projection = self.proj_net.parameters()
+
+        if self.cfg.MITIGATOR.MAVIASB.PROJNET.OPTIM.TYPE == "SGD":
+            self.optimizer_projection = torch.optim.SGD(
+                parameters_projection,
+                lr=self.cfg.MITIGATOR.MAVIASB.PROJNET.OPTIM.LR,
+                momentum=self.cfg.MITIGATOR.MAVIASB.PROJNET.OPTIM.MOMENTUM,
+                weight_decay=self.cfg.MITIGATOR.MAVIASB.PROJNET.OPTIM.WEIGHT_DECAY,
+            )
+        elif self.cfg.MITIGATOR.MAVIASB.PROJNET.OPTIM.TYPE == "Adam":
+            self.optimizer_projection = torch.optim.Adam(
+                parameters_projection,
+                lr=self.cfg.MITIGATOR.MAVIASB.PROJNET.OPTIM.LR,
+                weight_decay=self.cfg.MITIGATOR.MAVIASB.PROJNET.OPTIM.WEIGHT_DECAY,
+            )
+        else:
+            raise ValueError(
+                f"Unsupported optimizer type: {self.cfg.MITIGATOR.MAVIASB.PROJNET.OPTIM.TYPE}"
+            )
+
+    def _train_iter(self, batch):
+        inputs = batch["inputs"].to(self.device)
+        targets = batch["targets"].to(self.device)
+        indices = batch["index"]
+
+        self.optimizer.zero_grad(set_to_none=True)
+        self.optimizer_projection.zero_grad(set_to_none=True)
+        with torch.no_grad():
+            for _, bcc_net in self.bcc_nets.items():
+                _, b_feats = bcc_net(inputs)
+        b_feats = self.proj_net(b_feats)
+
+        logits, logits2 = self.model.mavias_forward(inputs, b_feats)
+        tmp = logits2.detach().cpu().clone()
+        norm_main = torch.norm(logits)
+        norm_clip = torch.norm(tmp).to(self.device)
+        norm_loss = F.mse_loss(
+            norm_main, norm_clip * self.cfg.MITIGATOR.MAVIASB.LOSS.LAMBDA
+        )
+        ce_loss = self.criterion(logits + logits2, targets)
+
+        loss = ce_loss + self.cfg.MITIGATOR.MAVIASB.LOSS.ALPHA * norm_loss
+
+        self._loss_backward(loss)
+        self._optimizer_step()
+        self.scheduler.step()
+
+        return {"train_cls_loss": ce_loss, "train_norm_loss": norm_loss}
+
+    def _optimizer_step(self):
+        self.optimizer.step()
+        self.optimizer_projection.step()
+
+    def _set_train(self):
+        self.proj_net.train()
+        for _, bcc_net in self.bcc_nets.items():
+            bcc_net.eval()
+        return super()._set_train()
+
+    def _set_eval(self):
+        self.proj_net.eval()
+        for _, bcc_net in self.bcc_nets.items():
+            bcc_net.eval()
+        return super()._set_eval()
