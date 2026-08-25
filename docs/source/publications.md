@@ -35,6 +35,7 @@ protected attribute as a shortcut.
 - **In the tool:** `MITIGATOR.TYPE: flac` (and the blind variant `flacb`).
 - **Venue:** IEEE Transactions on Pattern Analysis and Machine Intelligence
   (TPAMI), 47(2):1148–1160, 2024.
+- **Paper:** [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/10737139).
 
 ```bibtex
 @article{sarridis2024flac,
@@ -59,7 +60,7 @@ to become invariant to them, rather than exploiting them.
 - **In the tool:** `MITIGATOR.TYPE: badd`.
 - **Venue:** IEEE/CVF International Conference on Computer Vision Workshops
   (ICCVW), 2025, pp. 7723–7732.
-- **Preprint:** [arXiv:2408.11439](https://arxiv.org/abs/2408.11439).
+- **Paper:** [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/11375491).
 
 ```bibtex
 @inproceedings{sarridis2025badd,
@@ -84,7 +85,7 @@ sensitive attribute in advance.
   `[mavias]` extra (`pip install -e ".[mavias]"`).
 - **Venue:** IEEE/CVF International Conference on Computer Vision (ICCV), 2025,
   pp. 1271–1281.
-- **Preprint:** [arXiv:2412.06632](https://arxiv.org/abs/2412.06632).
+- **Paper:** [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/11444940).
 
 ```bibtex
 @inproceedings{sarridis2025mavias,
