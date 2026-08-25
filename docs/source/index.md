@@ -77,6 +77,7 @@ getting-started
 using-the-app
 understanding-results
 catalog
+publications
 faq
 ```
 
