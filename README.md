@@ -220,21 +220,33 @@ ruff check src tests
 
 ## Citations
 
+See the [Publications](https://vb-mitigator.readthedocs.io/en/latest/publications.html)
+page for details. If you use VB-Mitigator, please cite the framework and the
+method(s) you used.
+
 ```bibtex
+@article{sarridis2025vbmitigator,
+  title={VB-Mitigator: An open-source framework for evaluating and advancing visual bias mitigation},
+  author={Sarridis, Ioannis and Koutlis, Christos and Papadopoulos, Symeon and Diou, Christos},
+  journal={arXiv preprint arXiv:2507.18348}, year={2025}
+}
 @article{sarridis2024flac,
   title={FLAC: Fairness-aware representation learning by suppressing attribute-class associations},
   author={Sarridis, Ioannis and Koutlis, Christos and Papadopoulos, Symeon and Diou, Christos},
-  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, year={2024}, publisher={IEEE}
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  volume={47}, number={2}, pages={1148--1160}, year={2024}, publisher={IEEE}
 }
-@article{sarridis2024badd,
+@inproceedings{sarridis2025badd,
   title={BAdd: Bias Mitigation through Bias Addition},
   author={Sarridis, Ioannis and Koutlis, Christos and Papadopoulos, Symeon and Diou, Christos},
-  journal={arXiv preprint arXiv:2408.11439}, year={2024}
+  booktitle={2025 IEEE/CVF International Conference on Computer Vision Workshops (ICCVW)},
+  pages={7723--7732}, year={2025}, organization={IEEE}
 }
-@article{sarridis2024mavias,
-  title={MAVias: Mitigate any Visual Bias},
+@inproceedings{sarridis2025mavias,
+  title={MAVias: Mitigate Any Visual Bias},
   author={Sarridis, Ioannis and Koutlis, Christos and Papadopoulos, Symeon and Diou, Christos},
-  journal={arXiv preprint arXiv:2412.06632}, year={2024}
+  booktitle={2025 IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages={1271--1281}, year={2025}, organization={IEEE}
 }
 ```
 
